@@ -1,0 +1,35 @@
+Orb
+Copyright (c) 2026 Yanikuaite
+Licensed under the Orb License 1.0 — see LICENSE.
+
+INSPIRAÇÃO
+----------
+Este projeto é uma implementação independente, inspirada em ideias e na
+arquitetura do JARVIS (Mark LVII), de FatihMakes:
+
+  https://www.youtube.com/@FatihMakes
+
+Ideias aproveitadas: a escada de modelos do Gemini com descanso de cota, as
+categorias de memória de longo prazo e o tom de "assistente com corpo" do
+personagem. A camada desktop do JARVIS (PyQt, controle do computador, avatar 3D,
+voz local) não foi portada; o Orb é um cliente móvel com backend FastAPI.
+
+Não há código-fonte copiado do JARVIS neste repositório. A implementação foi
+escrita de forma independente. O projeto JARVIS e seus materiais permanecem sob
+a licença CC BY-NC 4.0 (uso não comercial), definida pelo autor original. Essa
+licença se aplica apenas ao projeto original, não a este repositório. Nenhum
+arquivo do JARVIS é redistribuído aqui.
+
+MATERIAIS DE TERCEIROS
+----------------------
+- Google Gemini (google-genai): SDK e API do Google, sob os termos do Google.
+- Open-Meteo: dados meteorológicos, CC BY 4.0 (https://open-meteo.com).
+- DuckDuckGo Instant Answer API: resultados de busca, sob os termos do DuckDuckGo.
+- Fontes do sistema: a interface usa apenas famílias instaladas no aparelho.
+- Ícones: desenhados para este projeto (SVG/PNG em mobile/www/icons).
+
+MARCA
+-----
+"Orb" é uma palavra comum, usada aqui como nome do projeto. Existem produtos
+homônimos no mercado, sem qualquer vínculo com este repositório. Veja a seção 3
+da LICENSE.

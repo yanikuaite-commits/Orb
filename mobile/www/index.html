@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#05060a" />
+  <meta name="description" content="Orb — seu assistente pessoal de IA, no seu bolso." />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Orb" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+  <link rel="stylesheet" href="/styles.css" />
+  <title>Orb</title>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+
+  <div id="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"><i></i></span>
+        <span class="brand-text">
+          <strong id="assistantName">ORB</strong>
+          <em id="status"><span class="dot"></span> conectando…</em>
+        </span>
+      </div>
+      <div class="topbar-actions">
+        <button id="voiceToggle" class="icon-btn" title="Voz" aria-label="Alternar voz" aria-pressed="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>
+        </button>
+        <button id="memoryBtn" class="icon-btn" title="Memória" aria-label="Memória">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-1 5.8V15a3 3 0 0 0 3 3 2 2 0 0 0 4 0V6a2 2 0 0 0-3-2z"/><path d="M15 4a3 3 0 0 1 3 3 3 3 0 0 1 1 5.8V15a3 3 0 0 1-3 3 2 2 0 0 1-4 0"/></svg>
+        </button>
+        <button id="settingsBtn" class="icon-btn" title="Ajustes" aria-label="Ajustes">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main id="chat" class="chat" aria-live="polite">
+      <section id="hero" class="hero">
+        <div class="reactor" aria-hidden="true">
+          <span class="ring ring-a"></span>
+          <span class="ring ring-b"></span>
+          <span class="ring ring-c"></span>
+          <span class="core"><i></i></span>
+          <span class="spark s1"></span><span class="spark s2"></span><span class="spark s3"></span>
+        </div>
+        <h2 class="hero-title">Sistemas online.</h2>
+        <p class="hero-sub">Fale ou escreva. Eu cuido do resto.</p>
+        <div class="chips" id="chips">
+          <button class="chip" data-say="O que você consegue fazer?">O que você faz?</button>
+          <button class="chip" data-say="Qual é a previsão do tempo para hoje?">Previsão do tempo</button>
+          <button class="chip" data-say="Pesquise as notícias de tecnologia de hoje.">Notícias de hoje</button>
+          <button class="chip" data-say="Lembre-me de beber água em uma hora.">Criar lembrete</button>
+        </div>
+      </section>
+    </main>
+
+    <div id="thinking" class="thinking hidden" aria-hidden="true">
+      <span class="think-orb"></span>
+      <span class="think-label">processando</span>
+      <span class="think-dots"><i></i><i></i><i></i></span>
+    </div>
+
+    <footer class="composer">
+      <div id="recordingBar" class="recording hidden">
+        <span class="rec-dot"></span>
+        <span id="recTime" class="rec-time">0:00</span>
+        <span class="rec-wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        <button id="recCancel" class="rec-cancel" type="button">cancelar</button>
+      </div>
+      <div class="composer-row">
+        <button id="micBtn" class="mic" type="button" aria-label="Falar" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></svg>
+        </button>
+        <label class="field">
+          <textarea id="input" rows="1" placeholder="Mensagem para o Orb…" enterkeyhint="send" autocomplete="off"></textarea>
+        </label>
+        <button id="sendBtn" class="send" type="button" aria-label="Enviar" disabled>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12l16-8-5 8 5 8-16-8z"/></svg>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <div id="backdrop" class="backdrop hidden"></div>
+
+  <aside id="memorySheet" class="sheet" aria-hidden="true" aria-label="Memória">
+    <header class="sheet-head">
+      <h3>Memória</h3>
+      <button class="close" data-close="memorySheet" aria-label="Fechar">×</button>
+    </header>
+    <div class="sheet-body">
+      <p class="hint">O que o Orb lembra sobre você. Toque para apagar.</p>
+      <div id="memoryList" class="memory-list"></div>
+      <form id="memoryForm" class="memory-form">
+        <input id="memKey" placeholder="Assunto (ex.: café preferido)" maxlength="120" required />
+        <textarea id="memValue" placeholder="O que devo lembrar?" maxlength="1200" rows="2" required></textarea>
+        <div class="memory-form-row">
+          <select id="memCategory" aria-label="Categoria">
+            <option value="identity">identidade</option>
+            <option value="preferences">preferências</option>
+            <option value="projects">projetos</option>
+            <option value="notes" selected>notas</option>
+            <option value="facts">fatos</option>
+          </select>
+          <button class="btn primary" type="submit">Guardar</button>
+        </div>
+      </form>
+      <button id="clearMemory" class="btn danger ghost" type="button">Apagar toda a memória</button>
+    </div>
+  </aside>
+
+  <aside id="settingsSheet" class="sheet" aria-hidden="true" aria-label="Ajustes">
+    <header class="sheet-head">
+      <h3>Ajustes</h3>
+      <button class="close" data-close="settingsSheet" aria-label="Fechar">×</button>
+    </header>
+    <div class="sheet-body">
+      <div class="group">
+        <h4>Identidade</h4>
+        <label>Nome do assistente<input id="cfgName" maxlength="40" placeholder="Orb" /></label>
+        <label>Seu nome<input id="cfgUser" maxlength="60" placeholder="Como devo te chamar?" /></label>
+        <label>Idioma
+          <select id="cfgLanguage">
+            <option value="pt-BR">Português (Brasil)</option>
+            <option value="pt-PT">Português (Portugal)</option>
+            <option value="en-US">English (US)</option>
+            <option value="es-ES">Español</option>
+            <option value="fr-FR">Français</option>
+            <option value="de-DE">Deutsch</option>
+            <option value="it-IT">Italiano</option>
+            <option value="ja-JP">日本語</option>
+          </select>
+        </label>
+        <label>Personalidade extra<textarea id="cfgPersona" rows="2" maxlength="600" placeholder="Ex.: seja mais direto e use humor seco."></textarea></label>
+      </div>
+
+      <div class="group">
+        <h4>Voz</h4>
+        <label>Motor de voz
+          <select id="cfgTts">
+            <option value="browser">Voz do aparelho (grátis)</option>
+            <option value="gemini">Voz Gemini (mais natural)</option>
+          </select>
+        </label>
+        <label>Voz Gemini
+          <select id="cfgVoice"></select>
+        </label>
+      </div>
+
+      <div class="group">
+        <h4>Conexão</h4>
+        <label>Endereço do servidor<input id="cfgServer" placeholder="https://meu-orb.exemplo.com" inputmode="url" /></label>
+        <label>Token de acesso<input id="cfgToken" type="password" placeholder="opcional" autocomplete="off" /></label>
+        <label>Chave da API Gemini<input id="cfgApiKey" type="password" placeholder="AIza…" autocomplete="off" /></label>
+        <p class="hint" id="keyHint">A chave fica no servidor, nunca no seu telefone.</p>
+      </div>
+
+      <div class="group">
+        <h4>Dados</h4>
+        <button id="installBtn" class="btn ghost" type="button" hidden>Instalar aplicativo</button>
+        <button id="clearHistory" class="btn ghost danger" type="button">Limpar conversa</button>
+      </div>
+
+      <button id="saveSettings" class="btn primary wide" type="button">Salvar ajustes</button>
+      <p class="version">Orb Mobile · v1.0</p>
+    </div>
+  </aside>
+
+  <div id="toast" class="toast hidden" role="status"></div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
