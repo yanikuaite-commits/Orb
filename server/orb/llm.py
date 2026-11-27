@@ -30,7 +30,7 @@ FAST = "fast"
 SMART = "smart"
 SEARCH = "search"
 
-DEFAULT_TIMEOUT_MS = 30_000
+DEFAULT_TIMEOUT_MS = 60_000
 COOLDOWN_SECONDS = 300
 _MISSING = object()
 
@@ -39,6 +39,7 @@ _cool_lock = threading.Lock()
 _client: Optional[genai.Client] = None
 _client_key = ""
 _last_error = ""
+_last_detail = ""
 _error_lock = threading.Lock()
 
 
@@ -48,10 +49,17 @@ def last_error() -> str:
         return _last_error
 
 
-def _set_error(value: str) -> None:
-    global _last_error
+def last_detail() -> str:
+    """Short vendor message for the most recent failure, safe to show to the user."""
+    with _error_lock:
+        return _last_detail
+
+
+def _set_error(value: str, detail: str = "") -> None:
+    global _last_error, _last_detail
     with _error_lock:
         _last_error = value
+        _last_detail = detail[:240]
 
 
 def _ladder(tier: str) -> list[str]:
@@ -149,12 +157,12 @@ def call(contents: Any, tier: str = FAST, config: Any = None,
                 print(f"[llm] {model}: quota exhausted, resting it")
             elif _is_key_error(message):
                 print(f"[llm] API key refused: {message[:160]}")
-                _set_error("key")
+                _set_error("key", message)
                 break
             else:
                 print(f"[llm] {model}: {type(exc).__name__}: {message[:160]}")
     if failure and last_error() != "key":
-        _set_error("unavailable")
+        _set_error("unavailable", failure)
     if failure:
         print(f"[llm] every model on the {tier} ladder failed")
     return None

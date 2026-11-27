@@ -54,7 +54,7 @@ criptografada no celular e é enviada só para o Google.
 - **Voz do aparelho** (grátis) ou **voz Gemini** (mais natural).
 - **App Android nativo** em Kotlin + Jetpack Compose, com PWA instalável como alternativa.
 - **Escolha de modelo de texto**: Gemini (também voz/live) ou Groq (só texto), com modelo editável em Ajustes.
-- **Arquivos no celular**: o Orb lista, busca, renomeia, move, copia, apaga, cria pastas, compacta em ZIP e extrai ZIPs em `/sdcard`. A pasta `/sdcard/Android` é bloqueada. Apagar, renomear, mover, sobrescrever e extrair pedem autorização na tela.
+- **Arquivos no celular**: o Orb lista, busca por nome ou tamanho (por exemplo, arquivos acima de 200 MB), renomeia, move, copia, apaga, cria pastas, compacta em ZIP e extrai ZIPs em `/sdcard`. A pasta `/sdcard/Android` é bloqueada. Apagar, renomear, mover, sobrescrever e extrair pedem autorização na tela.
 
 ## Acesso a arquivos
 
@@ -218,9 +218,15 @@ app fechado. O app Kotlin é o recomendado para Android.
 | `remember` / `forget` / `recall` | Memória de longo prazo |
 | `now` | Data e hora do aparelho |
 | `set_reminder` / `list_reminders` / `cancel_reminder` | Lembretes com alarme local no Android |
+| `list_files` / `find_files` / `file_info` | Lista, busca por nome ou tamanho e inspeciona arquivos em `/sdcard` |
+| `rename_file` / `move_file` / `copy_file` / `delete_file` / `make_folder` | Organiza arquivos e pastas, com aprovação nas operações destrutivas |
+| `zip_files` / `unzip_file` | Compacta e extrai ZIPs, com proteção contra ZIP-slip |
 
-Essas ferramentas rodam **no próprio aparelho** no app Kotlin. Na
-PWA/Capacitor, elas rodam no backend.
+As ferramentas de arquivo rodam **no próprio aparelho** no app Kotlin. Resultados
+de ferramentas são limitados em tamanho para não estourar a janela do modelo, e
+buscas em `/sdcard` têm limite de tempo e de itens para não travar o aparelho. A
+PWA/Capacitor não acessa arquivos do aparelho: nela existem apenas pesquisa,
+clima, memória e lembretes.
 
 Ferramentas de desktop do JARVIS (abrir programas, controlar o mouse, capturar a
 tela) **não** existem aqui: um celular não pode executá-las, e uma ferramenta que

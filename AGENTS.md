@@ -77,9 +77,16 @@ relative imports.
   API: a real free key listed `gemini-3.5-flash` and it answered 200, even
   though the models page only showed `gemini-3.5-flash-lite`. The default is
   `gemini-3.6-flash`; `gemini-3.5-flash`, `gemini-3.5-flash-lite`,
-  `gemini-3.8-flash`, `gemini-3.1-flash-lite` and `gemini-flash-latest` are
-  fallbacks. Check `GET /v1beta/models` plus a real `generateContent` before
-  removing a model.
+  `gemini-3.8-flash`, `gemini-3.1-flash-lite`, `gemini-2.5-flash`,
+  `gemini-2.5-flash-lite`, `gemini-2.0-flash` and `gemini-flash-latest` are
+  fallbacks. The client also caches the models returned by `GET /v1beta/models`
+  after key validation, so a key that cannot see a 3.x model still works.
+  Check `GET /v1beta/models` plus a real `generateContent` before removing a
+  model.
+- **Keep model requests bounded.** Tool results are capped at 16k characters,
+  history is capped, and `find_files` accepts `min_size_mb`/`max_size_mb` with a
+  15-second/50k-item scan budget. Do not remove these guards: a single large
+  listing otherwise turns into a Gemini 400 or a very slow phone.
 
 ## Style
 

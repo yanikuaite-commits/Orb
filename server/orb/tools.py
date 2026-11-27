@@ -302,12 +302,23 @@ HANDLERS: dict[str, Callable[..., str]] = {
 }
 
 
+MAX_TOOL_RESULT_CHARS = 16_000
+
+
+def _cap(value: str) -> str:
+    if len(value) <= MAX_TOOL_RESULT_CHARS:
+        return value
+    return value[:MAX_TOOL_RESULT_CHARS] + (
+        f"\n... (resultado truncado; {len(value)} caracteres no total)"
+    )
+
+
 def run(name: str, arguments: dict[str, Any] | None) -> str:
     handler = HANDLERS.get(name)
     if handler is None:
         return f"Ferramenta desconhecida: {name}"
     try:
-        return str(handler(**(arguments or {})))
+        return _cap(str(handler(**(arguments or {}))))
     except Exception as exc:
         print(f"[tools] {name} failed: {type(exc).__name__}: {exc}")
-        return f"A ferramenta {name} falhou: {exc}"
+        return _cap(f"A ferramenta {name} falhou: {exc}")

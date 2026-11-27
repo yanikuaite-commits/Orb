@@ -27,6 +27,8 @@ import java.util.UUID
 
 enum class OrbStatus { Ready, MissingKey, MissingGroqKey }
 
+private const val MAX_INPUT_CHARS = 8_000
+
 data class SettingsDraft(
     val assistantName: String,
     val userName: String,
@@ -199,7 +201,7 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun send(text: String = _state.value.input) {
-        val message = text.trim()
+        val message = text.trim().take(MAX_INPUT_CHARS)
         if (message.isBlank() || _state.value.busy) return
         if (!_state.value.apiKeySet) {
             notify("Ative o Orb com a chave Gemini em Ajustes.")
@@ -252,7 +254,7 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun setInput(value: String) {
-        _state.update { it.copy(input = value) }
+        _state.update { it.copy(input = value.take(MAX_INPUT_CHARS)) }
     }
 
     fun toggleTts() {
@@ -452,17 +454,23 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
 
     private fun failureDetail(error: Throwable): String = when (error) {
         is GeminiException -> when (error.code) {
-            404 -> "Gemini HTTP 404, modelo não encontrado"
+            400 -> "Gemini HTTP 400: ${error.body.snippet()}"
+            404 -> "Gemini HTTP 404, modelo não encontrado: ${error.body.snippet()}"
+            413 -> "Gemini HTTP 413, pedido grande demais"
             429 -> "Gemini HTTP 429, cota"
-            else -> "Gemini HTTP ${error.code}"
+            else -> "Gemini HTTP ${error.code}: ${error.body.snippet()}"
         }
         is GroqException -> when (error.code) {
-            404 -> "Groq HTTP 404, modelo não encontrado"
+            404 -> "Groq HTTP 404, modelo não encontrado: ${error.body.snippet()}"
+            413 -> "Groq HTTP 413, pedido grande demais"
             429 -> "Groq HTTP 429, cota"
-            else -> "Groq HTTP ${error.code}"
+            else -> "Groq HTTP ${error.code}: ${error.body.snippet()}"
         }
-        else -> error.message?.take(140) ?: error.javaClass.simpleName
+        else -> error.message?.take(180) ?: error.javaClass.simpleName
     }
+
+    private fun String.snippet(limit: Int = 220): String =
+        replace(Regex("\\s+"), " ").trim().take(limit)
 
     fun removeGeminiKey() {
         apiKeys.clearGemini()

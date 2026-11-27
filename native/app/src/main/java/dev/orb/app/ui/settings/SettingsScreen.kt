@@ -376,7 +376,7 @@ fun SettingsScreen(
             }
             Spacer(Modifier.height(12.dp))
             Text(
-                text = "Orb 2.2.0 · Licença Orb 1.0",
+                text = "Orb 2.2.1 · Licença Orb 1.0",
                 color = OrbMuted,
                 fontSize = 11.sp,
                 modifier = Modifier.fillMaxWidth(),
