@@ -11,8 +11,9 @@ object FilePaths {
         if (trimmed.isEmpty()) return null
         val rootCanonical = runCatching { root.canonicalFile }.getOrNull() ?: return null
         val candidate = when {
-            trimmed == "/sdcard" -> rootCanonical
+            trimmed == "/sdcard" || trimmed == "sdcard" -> rootCanonical
             trimmed.startsWith("/sdcard/") -> File(rootCanonical, trimmed.removePrefix("/sdcard/"))
+            trimmed.startsWith("sdcard/") -> File(rootCanonical, trimmed.removePrefix("sdcard/"))
             trimmed == rootCanonical.path -> rootCanonical
             trimmed.startsWith(rootCanonical.path + File.separator) -> File(trimmed)
             trimmed.startsWith("/") -> File(trimmed)

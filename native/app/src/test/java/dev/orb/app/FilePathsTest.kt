@@ -21,6 +21,7 @@ class FilePathsTest {
         val root = root()
         assertEquals(File(root, "Download").canonicalFile, FilePaths.resolve(root, "Download"))
         assertEquals(File(root, "Download").canonicalFile, FilePaths.resolve(root, "/sdcard/Download"))
+        assertEquals(File(root, "Download").canonicalFile, FilePaths.resolve(root, "sdcard/Download"))
         assertEquals(root.canonicalFile, FilePaths.resolve(root, "/sdcard"))
     }
 

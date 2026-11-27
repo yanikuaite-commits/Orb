@@ -31,7 +31,8 @@ class FileTools(
         val dir = resolve(path.ifBlank { "/sdcard" }) ?: return@io INVALID_PATH
         if (!dir.exists()) return@io "Não encontrei: ${display(dir)}"
         if (!dir.isDirectory) return@io describe(dir)
-        val children = dir.listFiles() ?: return@io "Sem acesso à pasta ${display(dir)}."
+        val children = dir.listFiles()?.filterNot { FilePaths.isBlocked(root, it) }
+            ?: return@io "Sem acesso à pasta ${display(dir)}."
         if (children.isEmpty()) return@io "A pasta ${display(dir)} está vazia."
         buildString {
             appendLine("Conteúdo de ${display(dir)} (${children.size} itens):")
@@ -212,6 +213,7 @@ class FileTools(
         if (paths.isEmpty()) return@io "Informe pelo menos um caminho para compactar."
         val resolved = paths.map { resolve(it) ?: return@io INVALID_PATH }
         val dest = resolve(destination) ?: return@io INVALID_PATH
+        if (resolved.any { it == dest }) return@io "O ZIP de destino não pode ser uma das origens."
         if (dest.isDirectory) return@io "O destino deve ser um arquivo .zip."
         if (dest.exists()) {
             if (!overwrite) return@io "Já existe ${display(dest)}. Use overwrite=true para substituir."
@@ -225,6 +227,7 @@ class FileTools(
         ZipOutputStream(BufferedOutputStream(FileOutputStream(dest))).use { zos ->
             fun add(file: File, base: File) {
                 if (isSymlink(file)) return
+                if (FilePaths.isBlocked(root, file)) return
                 if (file.canonicalFile == dest.canonicalFile) return
                 if (entries >= MAX_ZIP_ENTRIES) throw IOException("ZIP com entradas demais.")
                 val name = runCatching {

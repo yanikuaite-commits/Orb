@@ -34,6 +34,11 @@ relative imports.
   (encrypted Gemini/Groq keys), `SettingsStore`.
 - `native/app/src/main/java/dev/orb/app/agent/` — `TextModelClient`,
   `GeminiTextProvider`, `GroqTextProvider`, `OrbAgent` and tools.
+- `native/app/src/main/java/dev/orb/app/agent/FileTools.kt` — AI-only file
+  operations on `/sdcard` (list, find, info, rename, move, copy, delete, mkdir,
+  zip, unzip). `FilePaths.kt` canonicalizes every path and blocks
+  `/sdcard/Android`; `ApprovalCenter.kt` gates destructive operations. The tools
+  are registered in `OrbTools.specs()`/`run()` and are never shown as a user CLI.
 - `mobile/www/` — the PWA client. No build step, no framework.
 - `native/` — the Android client in Kotlin + Jetpack Compose (Ktor, DataStore,
   AlarmManager, SpeechRecognizer, TextToSpeech).
@@ -61,6 +66,13 @@ relative imports.
   voice/live) and optionally a Groq key (text); both are encrypted on device.
 - **Two keys only.** Gemini is mandatory for voice/live and text; Groq is optional
   and text-only. Do not add a third provider or a server URL to the Kotlin app.
+- **File tools must stay AI-only and gated.** Never add a visible file-manager
+  UI or a shell. Every path goes through `FilePaths.resolve`/`safeChild`; never
+  build a `File` from model text without it. `/sdcard/Android` is off-limits
+  (including ZIP entries). Delete, overwrite and unzip must call
+  `ApprovalCenter.request` before touching disk. Use `MANAGE_EXTERNAL_STORAGE`
+  on Android 11+ and `requestLegacyExternalStorage` on Android 10; no Shizuku or
+  root.
 - **Verify Gemini model IDs against the live key.** A docs page can lag the
   API: a real free key listed `gemini-3.5-flash` and it answered 200, even
   though the models page only showed `gemini-3.5-flash-lite`. The default is
