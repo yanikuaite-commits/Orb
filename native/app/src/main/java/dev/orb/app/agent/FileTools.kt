@@ -394,7 +394,7 @@ class FileTools(
         else -> "$bytes B"
     }
 
-    private suspend fun <T> io(block: () -> T): T = withContext(Dispatchers.IO) { block() }
+    private suspend fun <T> io(block: suspend () -> T): T = withContext(Dispatchers.IO) { block() }
 
     private companion object {
         const val MAX_LIST = 200
