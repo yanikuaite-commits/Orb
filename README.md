@@ -1,8 +1,9 @@
 # Orb — Assistente Pessoal de IA para o seu bolso
 
-Um assistente de voz e texto que roda no seu servidor, com **app Android
-nativo em Kotlin** e uma PWA instalável como alternativa. Conversa, pesquisa na web, consulta o clima, lembra de fatos sobre você
-e dispara lembretes — com uma interface HUD feita para a tela pequena.
+Um assistente de voz e texto que roda **inteiro no seu Android**, com uma PWA
+opcional que usa um backend Python. Conversa, pesquisa na web, consulta o clima,
+lembra de fatos sobre você e dispara lembretes — com uma interface HUD feita para
+a tela pequena.
 
 Inspirado no **JARVIS (Mark LVII)**, de FatihMakes: a ideia da escada de
 modelos do Gemini, a filosofia de memória e o tom do personagem vieram dele. No
@@ -24,18 +25,24 @@ e um app móvel instalável — código escrito de forma independente.
 ## Como funciona
 
 ```
-┌─────────────────────────┐         HTTPS / WSS        ┌──────────────────────────┐
-│  Celular (Kotlin/PWA)   │  ───────────────────────▶  │  Servidor Python         │
-│  • HUD e chat           │                            │  • FastAPI               │
-│  • microfone → WAV      │  ◀───────────────────────  │  • Agente + ferramentas  │
-│  • voz (TTS)            │        JSON + áudio        │  • Memória e lembretes   │
-└─────────────────────────┘                            │  • Gemini (texto/voz)    │
-                                                       └──────────────────────────┘
+┌─────────────────────────┐        HTTPS (só Google)      ┌──────────────────────┐
+│  App Android (Kotlin)   │  ───────────────────────────▶ │  Gemini API          │
+│  • HUD, chat e voz      │  ◀─────────────────────────── │  • texto e tools     │
+│  • memória e lembretes  │                               │  • voz (TTS)         │
+│  • chave criptografada  │                               └──────────────────────┘
+└─────────────────────────┘
+
+┌─────────────────────────┐        HTTPS                  ┌──────────────────────┐
+│  PWA / Capacitor        │  ───────────────────────────▶ │  Servidor Python     │
+│  (opcional)             │                               │  FastAPI + Gemini    │
+└─────────────────────────┘                               └──────────────────────┘
 ```
 
-O celular é a boca e os olhos; o servidor é o cérebro. Isso é proposital: a
-chave da API nunca vai para o telefone, a memória fica em um só lugar e o mesmo
-app pode ser aberto em vários aparelhos.
+O app Android é autônomo: fala direto com o Gemini, guarda memória, histórico e
+lembretes no aparelho e **não precisa de PC nem de servidor**. O backend FastAPI
+continua no repositório para a PWA/Capacitor. Como o Gemini é um serviço na
+nuvem, o app precisa de internet e de uma chave do usuário — ela fica
+criptografada no celular e é enviada só para o Google.
 
 ## O que ele faz
 
@@ -49,7 +56,10 @@ app pode ser aberto em vários aparelhos.
 
 ## Começando (5 minutos)
 
-### 1. Requisitos
+> **Só quer o app Android?** Ele é autônomo: instale o APK, cole sua chave Gemini
+> e pronto. O backend abaixo é necessário apenas para a PWA/Capacitor.
+
+### 1. Requisitos (backend opcional)
 
 - Python 3.11+
 - Uma chave do Google AI Studio: <https://aistudio.google.com/apikey>
@@ -117,9 +127,10 @@ Isso é essencial se o servidor estiver exposto na internet.
 
 ## App Android nativo (Kotlin)
 
-O cliente principal de celular é um app **Android nativo em Kotlin + Jetpack
-Compose**, em `native/`. Ele conversa com o mesmo backend FastAPI e foi feito
-para o que a PWA não consegue entregar:
+O cliente principal é um app **Android nativo em Kotlin + Jetpack Compose**, em
+`native/`. Ele é **autônomo**: fala direto com a API Gemini, guarda memória,
+histórico e lembretes no aparelho e **não precisa de PC, servidor ou token**.
+Foi feito para o que a PWA não consegue entregar:
 
 - chat com o HUD do Orb, voz (`SpeechRecognizer`) e resposta falada (TTS do
   aparelho ou voz Gemini);
@@ -129,7 +140,7 @@ para o que a PWA não consegue entregar:
 
 O APK de debug é compilado no GitHub Actions
 (`.github/workflows/android-native.yml`): aba **Actions → Native Android APK →
-artifact `orb-native-debug-apk`**. O APK tem cerca de 19 MB, é assinado com a
+artifact `orb-native-debug-apk`**. O APK tem cerca de 20 MB, é assinado com a
 chave de debug e instala direto no celular.
 
 ### Rodar no Android
@@ -143,9 +154,10 @@ cd native
 # APK: native/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Na primeira execução, informe o endereço do backend
-(`https://...` ou `http://192.168.x.x:8000`). O manifesto permite tráfego
-cleartext para desenvolvimento local; em produção, use HTTPS.
+Na primeira execução, cole sua chave do Google AI Studio. Ela é validada, fica
+criptografada no aparelho (`EncryptedSharedPreferences`) e é enviada só para o
+Google. O app não usa HTTP cleartext: todas as chamadas são HTTPS. Sem internet,
+o chat e o Gemini não funcionam; memória, histórico e lembretes continuam locais.
 
 ### iOS
 
@@ -175,8 +187,11 @@ app fechado. O app Kotlin é o recomendado para Android.
 | `web_search` | Pesquisa, notícias e pesquisa profunda com fontes |
 | `get_weather` | Clima atual e previsão de 1 a 7 dias |
 | `remember` / `forget` / `recall` | Memória de longo prazo |
-| `now` | Data e hora do servidor |
-| `set_reminder` / `list_reminders` / `cancel_reminder` | Lembretes com push no app |
+| `now` | Data e hora do aparelho |
+| `set_reminder` / `list_reminders` / `cancel_reminder` | Lembretes com alarme local no Android |
+
+Essas ferramentas rodam **no próprio aparelho** no app Kotlin. Na
+PWA/Capacitor, elas rodam no backend.
 
 Ferramentas de desktop do JARVIS (abrir programas, controlar o mouse, capturar a
 tela) **não** existem aqui: um celular não pode executá-las, e uma ferramenta que
@@ -229,6 +244,8 @@ mobile/
   package.json
 native/
   app/                 # app Android nativo (Kotlin + Compose)
+    src/main/java/dev/orb/app/agent/   # OrbAgent + ferramentas
+    src/main/java/dev/orb/app/data/    # GeminiClient, stores, chave
   gradle/              # wrapper e catálogo de versões
 .github/workflows/     # testes Python e builds dos APKs
 docs/
@@ -241,16 +258,19 @@ python -m pytest server/tests -q
 cd native && ./gradlew :app:testDebugUnitTest
 ```
 
-Os testes cobrem memória, ferramentas, o laço de ferramentas do agente, o
-caminho real do SDK (com um Gemini local simulado) e todas as rotas da API —
-inclusive o caminho sem chave.
+No backend, os testes cobrem memória, ferramentas, o laço de ferramentas do
+agente, o caminho real do SDK (com um Gemini local simulado) e todas as rotas da
+API — inclusive o caminho sem chave. No app Kotlin, os testes cobrem o wrapper
+WAV do TTS, o parser de datas de lembrete e a memória local.
 
 ## Segurança e privacidade
 
-- A chave Gemini fica no servidor (`.env` ou `config.json`), nunca no navegador.
-- Memória e histórico são arquivos JSON em `server/data/`; nada vai para a nuvem
-  além das mensagens enviadas ao Gemini.
-- Use `ORB_TOKEN` sempre que o servidor estiver acessível pela internet.
+- No app Android, a chave Gemini fica criptografada no aparelho
+  (`EncryptedSharedPreferences`) e é enviada só para o Google.
+- Na PWA/backend, a chave fica no servidor (`.env` ou `config.json`), nunca no
+  navegador. Use `ORB_TOKEN` sempre que o backend estiver acessível pela internet.
+- No app Android, memória e histórico são arquivos JSON em `filesDir/orb/`; nada
+  vai para a nuvem além das mensagens enviadas ao Gemini.
 - O app não guarda senhas nem executa comandos no seu computador.
 
 ## Limitações conhecidas
@@ -258,10 +278,11 @@ inclusive o caminho sem chave.
 - O microfone exige HTTPS no navegador.
 - A voz Gemini depende do modelo de TTS estar disponível para a sua chave; se
   falhar, o app cai automaticamente para a voz do aparelho.
-- Lembretes só notificam com o app aberto (PWA não tem push em segundo plano sem
-  um serviço de push). Para notificações fechadas, o próximo passo é Web Push.
+- Na PWA, lembretes só notificam com o app aberto (sem push em segundo plano).
+  No app Kotlin, os alarmes tocam com o app fechado via `AlarmManager`.
 - A escada de modelos usa nomes medidos no JARVIS em 2026. Se a sua chave não
-  tiver acesso a algum, ajuste `model_ladder` em `server/config.json`.
+  tiver acesso a algum, ajuste `model_ladder` no backend ou as listas em
+  `native/app/src/main/java/dev/orb/app/data/GeminiClient.kt`.
 
 ## Licença e créditos
 

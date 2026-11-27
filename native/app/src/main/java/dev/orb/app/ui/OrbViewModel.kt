@@ -238,7 +238,9 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     private suspend fun loadRemindersInternal() {
-        val items = withContext(Dispatchers.IO) { reminderStore.all().sortedBy { it.dueAt } }
+        val items = withContext(Dispatchers.IO) {
+            reminderStore.all().filter { !it.fired }.sortedBy { it.dueAt }
+        }
         scheduler.cancelAll(items)
         scheduler.scheduleAll(items)
         _state.update { it.copy(reminders = items, exactAlarms = scheduler.canScheduleExact()) }
