@@ -104,6 +104,13 @@ fun SetupScreen(state: OrbState, onActivate: (String, String, String) -> Unit) {
             ),
             colors = orbFieldColors(),
         )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "Depois de ativar, escolha Gemini ou Groq e o modelo em Ajustes → Modelo de texto.",
+            color = OrbMuted,
+            fontSize = 11.sp,
+            textAlign = TextAlign.Center,
+        )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
             value = userName,

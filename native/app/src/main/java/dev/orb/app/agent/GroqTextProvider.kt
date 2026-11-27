@@ -81,18 +81,22 @@ private class GroqConversation(
         val response = groq.chat(model, messages.toList(), toolSpecs)
         val message = response.choices.firstOrNull()?.message
             ?: return LlmTurn.Reply("Não consegui produzir uma resposta desta vez.")
-        messages += message
         val calls = message.toolCalls.orEmpty()
         if (calls.isEmpty()) {
+            messages += message
             return LlmTurn.Reply(message.content.orEmpty().ifBlank { "Não consegui produzir uma resposta desta vez." })
         }
+        val normalizedCalls = calls.mapIndexed { index, call ->
+            if (call.id.isBlank()) call.copy(id = "call_${System.currentTimeMillis()}_$index") else call
+        }
+        messages += message.copy(toolCalls = normalizedCalls)
         return LlmTurn.Tools(
-            calls.mapIndexed { index, call ->
+            normalizedCalls.map { call ->
                 val arguments = runCatching {
                     json.parseToJsonElement(call.function.arguments.ifBlank { "{}" }).jsonObject
                 }.getOrElse { JsonObject(emptyMap()) }
                 LlmToolCall(
-                    id = call.id.ifBlank { "call_${System.currentTimeMillis()}_$index" },
+                    id = call.id,
                     name = call.function.name,
                     arguments = arguments,
                 )

@@ -95,6 +95,13 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
             settingsStore.current = saved
             val hasGemini = apiKeys.hasGemini()
             val hasGroq = apiKeys.hasGroq()
+            val provider = if (saved.textProvider == "groq") "groq" else "gemini"
+            val model = when {
+                saved.textModel.isBlank() ->
+                    if (provider == "groq") DEFAULT_GROQ_TEXT_MODEL else DEFAULT_GEMINI_TEXT_MODEL
+                provider == "groq" && saved.textModel.startsWith("gemini") -> DEFAULT_GROQ_TEXT_MODEL
+                else -> saved.textModel.trim()
+            }
             val messages = withContext(Dispatchers.IO) {
                 history.messages(40).map { message ->
                     UiMessage(
@@ -110,8 +117,8 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
                     setupRequired = !hasGemini,
                     apiKeySet = hasGemini,
                     groqKeySet = hasGroq,
-                    textProvider = saved.textProvider,
-                    textModel = saved.textModel,
+                    textProvider = provider,
+                    textModel = model,
                     assistantName = saved.assistantName,
                     userName = saved.userName,
                     language = saved.language,
