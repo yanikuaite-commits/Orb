@@ -69,7 +69,7 @@ relative imports.
 - **File tools must stay AI-only and gated.** Never add a visible file-manager
   UI or a shell. Every path goes through `FilePaths.resolve`/`safeChild`; never
   build a `File` from model text without it. `/sdcard/Android` is off-limits
-  (including ZIP entries). Delete, overwrite and unzip must call
+  (including ZIP entries). Delete, rename, move, overwrite and unzip must call
   `ApprovalCenter.request` before touching disk. Use `MANAGE_EXTERNAL_STORAGE`
   on Android 11+ and `requestLegacyExternalStorage` on Android 10; no Shizuku or
   root.

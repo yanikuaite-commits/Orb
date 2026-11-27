@@ -54,7 +54,7 @@ criptografada no celular e é enviada só para o Google.
 - **Voz do aparelho** (grátis) ou **voz Gemini** (mais natural).
 - **App Android nativo** em Kotlin + Jetpack Compose, com PWA instalável como alternativa.
 - **Escolha de modelo de texto**: Gemini (também voz/live) ou Groq (só texto), com modelo editável em Ajustes.
-- **Arquivos no celular**: o Orb lista, busca, renomeia, move, copia, apaga, cria pastas, compacta em ZIP e extrai ZIPs em `/sdcard`. A pasta `/sdcard/Android` é bloqueada. Apagar, sobrescrever e extrair pedem autorização na tela.
+- **Arquivos no celular**: o Orb lista, busca, renomeia, move, copia, apaga, cria pastas, compacta em ZIP e extrai ZIPs em `/sdcard`. A pasta `/sdcard/Android` é bloqueada. Apagar, renomear, mover, sobrescrever e extrair pedem autorização na tela.
 
 ## Acesso a arquivos
 
@@ -68,8 +68,8 @@ e o resultado. Para liberar:
    No Android 10, conceda a permissão de armazenamento.
 
 Sem essa permissão o Orb continua conversando, mas não mexe em arquivos. As
-operações destrutivas (apagar, sobrescrever, extrair) mostram um diálogo de
-confirmação com o caminho e o nível de risco antes de rodar.
+operações de risco (apagar, renomear, mover, sobrescrever, extrair) mostram um
+diálogo de confirmação com o caminho e o nível de risco antes de rodar.
 
 ## Começando (5 minutos)
 

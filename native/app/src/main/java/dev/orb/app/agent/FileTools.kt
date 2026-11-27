@@ -102,13 +102,19 @@ class FileTools(
         val target = runCatching { File(parent, name).canonicalFile }.getOrNull() ?: return@io INVALID_PATH
         if (resolve(target.path) != target) return@io INVALID_PATH
         if (target == source) return@io "O nome já é ${source.name}."
-        if (target.exists()) {
-            if (!overwrite) return@io "Já existe ${display(target)}. Use overwrite=true para substituir."
-            if (!approve("Substituir arquivo", "Substituir ${display(target)}?", "MÉDIO", listOf(display(target)))) {
-                return@io CANCELED
-            }
-            if (!target.deleteRecursively()) return@io "Não consegui remover ${display(target)}."
+        if (target.exists() && !overwrite) {
+            return@io "Já existe ${display(target)}. Use overwrite=true para substituir."
         }
+        val replace = target.exists()
+        val detail = if (replace) {
+            "Substituir ${display(target)} por ${display(source)}?"
+        } else {
+            "Renomear ${display(source)} para ${display(target)}?"
+        }
+        if (!approve("Renomear item", detail, "MÉDIO", listOf(display(source), display(target)))) {
+            return@io CANCELED
+        }
+        if (replace && !target.deleteRecursively()) return@io "Não consegui remover ${display(target)}."
         if (source.renameTo(target)) {
             audit("rename", "${display(source)} -> ${display(target)}", "ok")
             return@io "Renomeado: ${display(source)} -> ${display(target)}"
@@ -133,13 +139,19 @@ class FileTools(
         if (source.isDirectory && canonicalTarget.path.startsWith(source.path + File.separator)) {
             return@io "Não posso mover uma pasta para dentro dela mesma."
         }
-        if (canonicalTarget.exists()) {
-            if (!overwrite) return@io "Já existe ${display(canonicalTarget)}. Use overwrite=true para substituir."
-            if (!approve("Substituir destino", "Mover ${display(source)} e substituir ${display(canonicalTarget)}?", "MÉDIO", listOf(display(canonicalTarget)))) {
-                return@io CANCELED
-            }
-            if (!canonicalTarget.deleteRecursively()) return@io "Não consegui remover ${display(canonicalTarget)}."
+        if (canonicalTarget.exists() && !overwrite) {
+            return@io "Já existe ${display(canonicalTarget)}. Use overwrite=true para substituir."
         }
+        val replace = canonicalTarget.exists()
+        val detail = if (replace) {
+            "Mover ${display(source)} e substituir ${display(canonicalTarget)}?"
+        } else {
+            "Mover ${display(source)} para ${display(canonicalTarget)}?"
+        }
+        if (!approve("Mover item", detail, "MÉDIO", listOf(display(source), display(canonicalTarget)))) {
+            return@io CANCELED
+        }
+        if (replace && !canonicalTarget.deleteRecursively()) return@io "Não consegui remover ${display(canonicalTarget)}."
         if (!source.renameTo(canonicalTarget)) {
             val copied = runCatching { copyRecursively(source, canonicalTarget, false) }
             if (copied.isFailure) return@io "Não consegui mover: ${copied.exceptionOrNull()?.message ?: "erro"}"
@@ -212,6 +224,7 @@ class FileTools(
         val paths = sources.split('\n', '|').map { it.trim() }.filter { it.isNotEmpty() }.distinct()
         if (paths.isEmpty()) return@io "Informe pelo menos um caminho para compactar."
         val resolved = paths.map { resolve(it) ?: return@io INVALID_PATH }
+        resolved.forEach { if (!it.exists()) return@io "Não encontrei: ${display(it)}" }
         val dest = resolve(destination) ?: return@io INVALID_PATH
         if (resolved.any { it == dest }) return@io "O ZIP de destino não pode ser uma das origens."
         if (dest.isDirectory) return@io "O destino deve ser um arquivo .zip."
