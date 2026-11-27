@@ -1,0 +1,320 @@
+package dev.orb.app.ui.settings
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import dev.orb.app.ui.OrbState
+import dev.orb.app.ui.OrbStatus
+import dev.orb.app.ui.theme.OrbBg
+import dev.orb.app.ui.theme.OrbLine
+import dev.orb.app.ui.theme.OrbMuted
+import dev.orb.app.ui.theme.OrbPanel
+import dev.orb.app.ui.theme.OrbRed
+import dev.orb.app.ui.theme.OrbText
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SettingsScreen(
+    state: OrbState,
+    onSave: (String, String, String, String, String, String, String, String, String) -> Unit,
+    onBack: () -> Unit,
+) {
+    var server by remember(state.serverUrl) { mutableStateOf(state.serverUrl) }
+    var token by remember(state.token) { mutableStateOf(state.token) }
+    var assistant by remember(state.assistantName) { mutableStateOf(state.assistantName) }
+    var user by remember(state.userName) { mutableStateOf(state.userName) }
+    var language by remember(state.language) { mutableStateOf(state.language) }
+    var persona by remember(state.persona) { mutableStateOf(state.persona) }
+    var ttsEngine by remember(state.ttsEngine) { mutableStateOf(state.ttsEngine) }
+    var voice by remember(state.voice) { mutableStateOf(state.voice) }
+    var apiKey by remember { mutableStateOf("") }
+
+    Column(Modifier.fillMaxSize().background(OrbBg)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = "Voltar", tint = OrbText)
+            }
+            Text("Ajustes", color = OrbText, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+        }
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp),
+        ) {
+            SectionTitle("Servidor")
+            OutlinedTextField(
+                value = server,
+                onValueChange = { server = it },
+                label = { Text("Endereço") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                colors = orbFieldColors(),
+            )
+            Spacer(Modifier.height(10.dp))
+            OutlinedTextField(
+                value = token,
+                onValueChange = { token = it },
+                label = { Text("Token (opcional)") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                colors = orbFieldColors(),
+            )
+            Spacer(Modifier.height(8.dp))
+            StatusCard(state)
+
+            SectionTitle("Assistente")
+            OutlinedTextField(
+                value = assistant,
+                onValueChange = { assistant = it },
+                label = { Text("Nome do assistente") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = orbFieldColors(),
+            )
+            Spacer(Modifier.height(10.dp))
+            OutlinedTextField(
+                value = user,
+                onValueChange = { user = it },
+                label = { Text("Seu nome") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = orbFieldColors(),
+            )
+            Spacer(Modifier.height(10.dp))
+            OutlinedTextField(
+                value = language,
+                onValueChange = { language = it },
+                label = { Text("Idioma (ex.: pt-BR)") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = orbFieldColors(),
+            )
+            Spacer(Modifier.height(10.dp))
+            OutlinedTextField(
+                value = persona,
+                onValueChange = { persona = it },
+                label = { Text("Personalidade (opcional)") },
+                minLines = 3,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = orbFieldColors(),
+            )
+
+            SectionTitle("Voz")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = ttsEngine == "device",
+                    onClick = { ttsEngine = "device" },
+                    label = { Text("Voz do aparelho") },
+                )
+                FilterChip(
+                    selected = ttsEngine == "gemini",
+                    onClick = { ttsEngine = "gemini" },
+                    label = { Text("Voz Gemini") },
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "A voz do aparelho funciona offline. A voz Gemini usa o endpoint /api/tts.",
+                color = OrbMuted,
+                fontSize = 11.sp,
+            )
+            if (ttsEngine == "gemini" && state.voices.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                VoicePicker(state.voices, voice) { voice = it }
+            }
+
+            SectionTitle("Chave Gemini")
+            OutlinedTextField(
+                value = apiKey,
+                onValueChange = { apiKey = it },
+                label = { Text("API key") },
+                placeholder = {
+                    Text(if (state.apiKeySet) "configurada — deixe em branco para manter" else "AIza…")
+                },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                colors = orbFieldColors(),
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "A chave fica no servidor, não no APK. O app só a envia uma vez.",
+                color = OrbMuted,
+                fontSize = 11.sp,
+            )
+
+            Spacer(Modifier.height(22.dp))
+            Button(
+                onClick = {
+                    onSave(server, token, assistant, user, language, persona, ttsEngine, voice, apiKey)
+                },
+                enabled = !state.busy,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = OrbRed),
+            ) {
+                if (state.busy) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp,
+                    )
+                } else {
+                    Text("Salvar ajustes", fontWeight = FontWeight.SemiBold)
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "Orb 1.0 · Licença Orb 1.0",
+                color = OrbMuted,
+                fontSize = 11.sp,
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun SectionTitle(text: String) {
+    Text(
+        text = text.uppercase(),
+        color = OrbRed,
+        fontSize = 10.sp,
+        letterSpacing = 2.sp,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(top = 20.dp, bottom = 8.dp),
+    )
+}
+
+@Composable
+private fun StatusCard(state: OrbState) {
+    val label = when (state.status) {
+        OrbStatus.Online -> "online"
+        OrbStatus.MissingKey -> "conectado, falta a chave Gemini"
+        OrbStatus.Connecting -> "conectando…"
+        OrbStatus.Offline -> "offline"
+    }
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = OrbPanel,
+        border = BorderStroke(1.dp, OrbLine),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(8.dp).clip(CircleShape).background(statusColor(state.status)))
+            Spacer(Modifier.width(8.dp))
+            Text(label, color = OrbText, fontSize = 12.sp)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun VoicePicker(voices: List<String>, selected: String, onSelect: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+        OutlinedTextField(
+            value = selected,
+            onValueChange = {},
+            readOnly = true,
+            label = { Text("Voz Gemini") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
+            shape = RoundedCornerShape(12.dp),
+            colors = orbFieldColors(),
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            voices.forEach { voice ->
+                DropdownMenuItem(
+                    text = { Text(voice) },
+                    onClick = {
+                        onSelect(voice)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+internal fun orbFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = OrbRed.copy(alpha = 0.7f),
+    unfocusedBorderColor = OrbLine,
+    focusedLabelColor = OrbRed,
+    unfocusedLabelColor = OrbMuted,
+    cursorColor = OrbRed,
+    focusedTextColor = OrbText,
+    unfocusedTextColor = OrbText,
+)
+
+private fun statusColor(status: OrbStatus): Color = when (status) {
+    OrbStatus.Online -> Color(0xFF35D07F)
+    OrbStatus.MissingKey -> Color(0xFFFFB020)
+    OrbStatus.Connecting -> OrbMuted
+    OrbStatus.Offline -> Color(0xFFFF6B6B)
+}

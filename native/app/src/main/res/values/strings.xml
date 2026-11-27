@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Orb</string>
+    <string name="notification_channel_reminders">Lembretes do Orb</string>
+    <string name="notification_channel_reminders_desc">Avisos dos lembretes que você pediu.</string>
+</resources>

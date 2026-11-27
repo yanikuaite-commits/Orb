@@ -37,3 +37,11 @@ mobile/android/app/src/main/assets/capacitor.plugins.json
 
 # Uploaded reference material (third-party, not redistributed)
 Mark-LVII-main*.zip
+
+# Native Android app
+native/.gradle/
+native/build/
+native/app/build/
+native/local.properties
+native/.idea/
+native/*.iml
