@@ -115,38 +115,60 @@ Defina `ORB_TOKEN` com uma string longa e aleatória. Quando ele existe:
 
 Isso é essencial se o servidor estiver exposto na internet.
 
-## Aplicativo nativo (APK / IPA)
+## Aplicativo nativo (Android / iOS)
 
-O `mobile/www` é um app web completo. O [Capacitor](https://capacitorjs.com/)
-empacota esse mesmo código como app nativo.
+O `mobile/www` é o app web; o [Capacitor](https://capacitorjs.com/) empacota o
+mesmo código como app nativo. A plataforma **Android já está gerada** em
+`mobile/android/`, e o APK é produzido pelo GitHub Actions
+(`.github/workflows/android.yml`) a cada push ou PR: aba **Actions → Android APK →
+artifact `orb-debug-apk`**.
+
+### Rodar no Android
+
+Requisitos: Node 20+, JDK 17 e Android Studio (SDK 34).
 
 ```bash
 cd mobile
-npm install
+npm ci
+npm run sync                 # copia www/ para o projeto Android
+npm run build:android        # gera o APK de debug
+# APK: mobile/android/app/build/outputs/apk/debug/app-debug.apk
 
-# Android (precisa do Android Studio + SDK)
-npx cap add android
-npx cap sync
-npx cap open android      # rode no emulador ou gere o APK
-
-# iOS (precisa de macOS + Xcode)
-npx cap add ios
-npx cap sync
-npx cap open ios
+npm run open:android         # ou abra no Android Studio
 ```
 
-Há dois modos:
+Para instalar no celular, copie o APK e permita "instalar de fontes
+desconhecidas". O APK de debug é assinado com a chave de debug; para publicar na
+Play Store, gere um AAB assinado.
 
-1. **Casca nativa apontando para o servidor** — o jeito mais simples de manter
-   atualizado. Em `mobile/capacitor.config.json`, adicione:
-   ```json
-   "server": { "url": "https://orb.seudominio.com" }
-   ```
-   O app nativo carrega a versão publicada no servidor.
+### Apontar para o servidor
 
-2. **App embarcado** — sem `server.url`, os arquivos vão dentro do APK. Nesse
-   caso, informe o endereço do servidor em **⚙ Ajustes → Endereço do servidor**
-   na primeira execução.
+O app nativo não compartilha o domínio da PWA. Na primeira execução, abra
+**⚙ Ajustes → Endereço do servidor** e informe a URL do backend
+(`https://...` ou `http://192.168.x.x:8000`). Para desenvolvimento em HTTP, o
+manifesto já permite tráfego cleartext e mixed content; em produção, use HTTPS e
+volte `allowMixedContent` para `false` em `mobile/capacitor.config.json`.
+
+Se preferir uma casca que sempre carrega a versão publicada, adicione ao
+`capacitor.config.json`:
+
+```json
+"server": { "url": "https://orb.seudominio.com" }
+```
+
+### iOS
+
+Precisa de macOS + Xcode + CocoaPods:
+
+```bash
+cd mobile
+npm ci
+npm run add:ios
+npm run sync
+npm run open:ios
+```
+
+A pasta `mobile/ios/` não é versionada: é gerada no Mac.
 
 ## Ferramentas disponíveis
 
@@ -204,8 +226,10 @@ server/
   tests/               # 40 testes, sem rede
 mobile/
   www/                 # PWA (HTML/CSS/JS, manifest, service worker, ícones)
+  android/             # projeto Android (Capacitor)
   capacitor.config.json
   package.json
+.github/workflows/     # testes Python e build do APK
 docs/
 ```
 

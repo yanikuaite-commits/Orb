@@ -680,7 +680,7 @@
       setStatus("servidor offline", "offline");
       toast("Não consegui falar com o servidor do Orb. Abra os ajustes e informe o endereço.", "error");
     }
-    if ("serviceWorker" in navigator) {
+    if ("serviceWorker" in navigator && !window.Capacitor?.isNativePlatform?.()) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
     if (window.Notification?.permission === "default") {

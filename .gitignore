@@ -16,10 +16,18 @@ server/config.json
 
 # Node / Capacitor
 node_modules/
-mobile/android/
 mobile/ios/
 mobile/.gradle/
 mobile/build/
+
+# Android build outputs and generated web assets
+mobile/android/.gradle/
+mobile/android/build/
+mobile/android/app/build/
+mobile/android/local.properties
+mobile/android/app/src/main/assets/public/
+mobile/android/app/src/main/assets/capacitor.config.json
+mobile/android/app/src/main/assets/capacitor.plugins.json
 
 # Editors / OS
 .DS_Store
