@@ -18,9 +18,26 @@ android {
         vectorDrawables { useSupportLibrary = true }
     }
 
+    signingConfigs {
+        val keystorePath = System.getenv("ORB_KEYSTORE_PATH")
+        if (!keystorePath.isNullOrBlank()) {
+            create("release") {
+                storeFile = project.file(keystorePath)
+                storePassword = System.getenv("ORB_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("ORB_KEY_ALIAS")
+                keyPassword = System.getenv("ORB_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = if (!System.getenv("ORB_KEYSTORE_PATH").isNullOrBlank()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }

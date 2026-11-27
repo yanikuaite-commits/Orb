@@ -105,6 +105,7 @@ class OrbAgent(
                 trace += ToolTrace(name = call.name, arguments = args, result = JsonPrimitive(result))
                 responseParts += GeminiPart(
                     functionResponse = GeminiFunctionResponse(
+                        id = call.id,
                         name = call.name,
                         response = buildJsonObject { put("result", result) },
                     ),

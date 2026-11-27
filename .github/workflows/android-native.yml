@@ -40,9 +40,39 @@ jobs:
         working-directory: native
         run: ./gradlew :app:assembleDebug --no-daemon --stacktrace
 
-      - name: Upload APK
+      - name: Upload debug APK
         uses: actions/upload-artifact@v6
         with:
           name: orb-native-debug-apk
           path: native/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Prepare release signing
+        env:
+          KEYSTORE_B64: ${{ secrets.ORB_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ORB_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ORB_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ORB_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/orb-release.jks"
+            {
+              echo "ORB_KEYSTORE_PATH=$RUNNER_TEMP/orb-release.jks"
+              echo "ORB_KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD"
+              echo "ORB_KEY_ALIAS=$KEY_ALIAS"
+              echo "ORB_KEY_PASSWORD=$KEY_PASSWORD"
+            } >> "$GITHUB_ENV"
+          else
+            echo "No ORB_KEYSTORE_BASE64 secret; the release APK will use the debug key."
+          fi
+
+      - name: Build release APK
+        working-directory: native
+        run: ./gradlew :app:assembleRelease --no-daemon --stacktrace
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: orb-native-release-apk
+          path: native/app/build/outputs/apk/release/*.apk
           if-no-files-found: error

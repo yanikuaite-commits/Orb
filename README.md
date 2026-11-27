@@ -280,9 +280,11 @@ WAV do TTS, o parser de datas de lembrete e a memória local.
   falhar, o app cai automaticamente para a voz do aparelho.
 - Na PWA, lembretes só notificam com o app aberto (sem push em segundo plano).
   No app Kotlin, os alarmes tocam com o app fechado via `AlarmManager`.
-- A escada de modelos usa nomes medidos no JARVIS em 2026. Se a sua chave não
-  tiver acesso a algum, ajuste `model_ladder` no backend ou as listas em
-  `native/app/src/main/java/dev/orb/app/data/GeminiClient.kt`.
+- O modelo de texto padrão é `gemini-3.5-flash`, com fallback para
+  `gemini-flash-latest` e `gemini-2.5-flash`. Se a sua chave não tiver acesso a
+  algum, ajuste as listas em
+  `native/app/src/main/java/dev/orb/app/data/GeminiClient.kt` (ou `model_ladder`
+  no backend).
 
 ## Licença e créditos
 

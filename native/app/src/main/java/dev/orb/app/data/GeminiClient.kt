@@ -34,12 +34,14 @@ data class GeminiPart(
 
 @Serializable
 data class GeminiFunctionCall(
+    val id: String? = null,
     val name: String = "",
     val args: JsonObject? = null,
 )
 
 @Serializable
 data class GeminiFunctionResponse(
+    val id: String? = null,
     val name: String = "",
     val response: JsonObject = JsonObject(emptyMap()),
 )
@@ -287,13 +289,15 @@ class GeminiClient(
         const val TTS_MODEL = "gemini-2.5-flash-preview-tts"
         const val COOLDOWN_MS = 300_000L
         val FAST_LADDER = listOf(
-            "gemini-2.5-flash-lite",
+            "gemini-3.5-flash-lite",
             "gemini-flash-lite-latest",
+            "gemini-2.5-flash-lite",
             "gemini-2.5-flash",
         )
         val SMART_LADDER = listOf(
-            "gemini-2.5-flash",
+            "gemini-3.5-flash",
             "gemini-flash-latest",
+            "gemini-2.5-flash",
             "gemini-2.5-flash-lite",
         )
         val cooldowns = mutableMapOf<String, Long>()
