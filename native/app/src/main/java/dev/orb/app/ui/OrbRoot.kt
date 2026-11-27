@@ -33,6 +33,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import dev.orb.app.AppContainer
 import dev.orb.app.ui.chat.ChatScreen
+import dev.orb.app.ui.components.FileApprovalDialog
 import dev.orb.app.ui.components.OrbMark
 import dev.orb.app.ui.memory.MemoryScreen
 import dev.orb.app.ui.reminders.RemindersScreen
@@ -115,40 +116,49 @@ fun OrbRoot(container: AppContainer) {
             }
         },
     ) { padding ->
-        NavHost(
-            navController = nav,
-            startDestination = "chat",
-            modifier = Modifier.padding(padding),
-        ) {
-            composable("chat") {
-                ChatScreen(
-                    state = state,
-                    onSend = vm::send,
-                    onInput = vm::setInput,
-                    onToggleTts = vm::toggleTts,
-                    onClearHistory = vm::clearHistory,
-                    onOpenSettings = { nav.navigate("settings") },
-                )
+        Box(Modifier.fillMaxSize().padding(padding)) {
+            NavHost(
+                navController = nav,
+                startDestination = "chat",
+            ) {
+                composable("chat") {
+                    ChatScreen(
+                        state = state,
+                        onSend = vm::send,
+                        onInput = vm::setInput,
+                        onToggleTts = vm::toggleTts,
+                        onClearHistory = vm::clearHistory,
+                        onOpenSettings = { nav.navigate("settings") },
+                    )
+                }
+                composable("memory") {
+                    MemoryScreen(
+                        state = state,
+                        onLoad = vm::loadMemory,
+                        onDelete = vm::deleteMemory,
+                        onClear = vm::clearMemory,
+                    )
+                }
+                composable("reminders") {
+                    RemindersScreen(state = state, onLoad = vm::loadReminders)
+                }
+                composable("settings") {
+                    SettingsScreen(
+                        state = state,
+                        onSave = vm::saveSettings,
+                        onRemoveGeminiKey = vm::removeGeminiKey,
+                        onRemoveGroqKey = vm::removeGroqKey,
+                        onTest = vm::testModel,
+                        onRefreshFileAccess = vm::refreshFileAccess,
+                        onBack = { nav.popBackStack() },
+                    )
+                }
             }
-            composable("memory") {
-                MemoryScreen(
-                    state = state,
-                    onLoad = vm::loadMemory,
-                    onDelete = vm::deleteMemory,
-                    onClear = vm::clearMemory,
-                )
-            }
-            composable("reminders") {
-                RemindersScreen(state = state, onLoad = vm::loadReminders)
-            }
-            composable("settings") {
-                SettingsScreen(
-                    state = state,
-                    onSave = vm::saveSettings,
-                    onRemoveGeminiKey = vm::removeGeminiKey,
-                    onRemoveGroqKey = vm::removeGroqKey,
-                    onTest = vm::testModel,
-                    onBack = { nav.popBackStack() },
+            state.pendingFileApproval?.let { approval ->
+                FileApprovalDialog(
+                    approval = approval,
+                    onApprove = vm::approveFileAction,
+                    onDeny = vm::denyFileAction,
                 )
             }
         }

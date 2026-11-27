@@ -2,6 +2,8 @@ package dev.orb.app
 
 import android.app.Application
 import android.content.Context
+import dev.orb.app.agent.ApprovalCenter
+import dev.orb.app.agent.FileTools
 import dev.orb.app.agent.GeminiTextProvider
 import dev.orb.app.agent.GroqTextProvider
 import dev.orb.app.agent.OrbAgent
@@ -59,7 +61,9 @@ class AppContainer(context: Context) {
     val groq = GroqClient(http, apiKeyStore)
     val geminiText = GeminiTextProvider(gemini)
     val groqText = GroqTextProvider(groq, json)
-    val tools = OrbTools(http, gemini, memory, reminderStore, scheduler, json)
+    val approval = ApprovalCenter()
+    val fileTools = FileTools(appContext, approval)
+    val tools = OrbTools(http, gemini, memory, reminderStore, scheduler, json, fileTools)
     val agent = OrbAgent(memory, history, tools, settings)
 }
 

@@ -1,5 +1,12 @@
 package dev.orb.app.ui.settings
 
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +44,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,14 +52,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import dev.orb.app.data.DEFAULT_GEMINI_TEXT_MODEL
 import dev.orb.app.data.DEFAULT_GROQ_TEXT_MODEL
+import dev.orb.app.data.FileAccess
 import dev.orb.app.data.GEMINI_TEXT_MODELS
 import dev.orb.app.data.GROQ_TEXT_MODELS
 import dev.orb.app.ui.OrbState
@@ -71,6 +84,7 @@ fun SettingsScreen(
     onRemoveGeminiKey: () -> Unit,
     onRemoveGroqKey: () -> Unit,
     onTest: () -> Unit,
+    onRefreshFileAccess: () -> Unit,
     onBack: () -> Unit,
 ) {
     var assistant by remember(state.assistantName) { mutableStateOf(state.assistantName) }
@@ -85,6 +99,20 @@ fun SettingsScreen(
     var groqKey by remember { mutableStateOf("") }
     var confirmRemoveGemini by remember { mutableStateOf(false) }
     var confirmRemoveGroq by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val filePermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission(),
+    ) { onRefreshFileAccess() }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) onRefreshFileAccess()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
 
     val models = if (provider == "groq") GROQ_TEXT_MODELS else GEMINI_TEXT_MODELS
 
@@ -198,6 +226,56 @@ fun SettingsScreen(
                 }
             }
 
+            SectionTitle("Arquivos")
+            Text(
+                text = if (state.fileAccess) {
+                    "Acesso a todos os arquivos ativado. O Orb pode listar, buscar, renomear, mover, copiar, apagar, compactar e extrair em /sdcard."
+                } else {
+                    "Sem acesso. Ative para o Orb poder trabalhar com arquivos em /sdcard."
+                },
+                color = if (state.fileAccess) OrbMuted else OrbRed,
+                fontSize = 12.sp,
+            )
+            Spacer(Modifier.height(8.dp))
+            Button(
+                onClick = {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        val opened = runCatching {
+                            context.startActivity(FileAccess.settingsIntent(context))
+                        }.isSuccess
+                        if (!opened) {
+                            runCatching {
+                                context.startActivity(
+                                    Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION),
+                                )
+                            }
+                        }
+                    } else if (!state.fileAccess) {
+                        filePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    } else {
+                        runCatching {
+                            context.startActivity(
+                                Intent(
+                                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    Uri.parse("package:${context.packageName}"),
+                                ),
+                            )
+                        }
+                    }
+                },
+                enabled = !state.busy,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(containerColor = OrbRed),
+            ) {
+                Text(if (state.fileAccess) "Revisar acesso a arquivos" else "Permitir acesso a arquivos")
+            }
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "A pasta /sdcard/Android é bloqueada por segurança. Apagar, sobrescrever e extrair pedem confirmação.",
+                color = OrbMuted,
+                fontSize = 11.sp,
+            )
+
             SectionTitle("Assistente")
             OutlinedTextField(
                 value = assistant,
@@ -298,7 +376,7 @@ fun SettingsScreen(
             }
             Spacer(Modifier.height(12.dp))
             Text(
-                text = "Orb 2.1.2 · Licença Orb 1.0",
+                text = "Orb 2.2.0 · Licença Orb 1.0",
                 color = OrbMuted,
                 fontSize = 11.sp,
                 modifier = Modifier.fillMaxWidth(),

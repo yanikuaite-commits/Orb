@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.orb.app.AppContainer
+import dev.orb.app.agent.FileApproval
 import dev.orb.app.agent.LlmTurn
 import dev.orb.app.data.DEFAULT_GEMINI_TEXT_MODEL
 import dev.orb.app.data.DEFAULT_GROQ_TEXT_MODEL
@@ -17,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -69,6 +71,8 @@ data class OrbState(
     val reminders: List<Reminder> = emptyList(),
     val remindersLoading: Boolean = false,
     val exactAlarms: Boolean = true,
+    val fileAccess: Boolean = false,
+    val pendingFileApproval: FileApproval? = null,
     val snackbar: String? = null,
 ) {
     val status: OrbStatus get() = when {
@@ -91,6 +95,11 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
     private val agent = container.agent
 
     init {
+        viewModelScope.launch {
+            container.approval.pending.collect { pending ->
+                _state.update { it.copy(pendingFileApproval = pending) }
+            }
+        }
         viewModelScope.launch {
             val saved = settingsStore.flow.first()
             settingsStore.current = saved
@@ -129,6 +138,7 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
                     ttsEnabled = saved.ttsEnabled,
                     messages = messages,
                     exactAlarms = scheduler.canScheduleExact(),
+                    fileAccess = container.fileTools.hasAccess(),
                 )
             }
             loadRemindersInternal()
@@ -262,6 +272,18 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
             withContext(Dispatchers.IO) { history.clear() }
             _state.update { it.copy(messages = emptyList(), snackbar = "Conversa apagada.") }
         }
+    }
+
+    fun approveFileAction() {
+        container.approval.resolve(true)
+    }
+
+    fun denyFileAction() {
+        container.approval.resolve(false)
+    }
+
+    fun refreshFileAccess() {
+        _state.update { it.copy(fileAccess = container.fileTools.hasAccess()) }
     }
 
     fun loadMemory() {

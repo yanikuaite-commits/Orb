@@ -16,6 +16,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.add
+import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.double
 import kotlinx.serialization.json.int
@@ -39,6 +40,7 @@ class OrbTools(
     private val reminders: ReminderStore,
     private val scheduler: ReminderScheduler,
     private val json: Json,
+    private val files: FileTools,
 ) {
     fun specs(): List<ToolSpec> = listOf(
         decl(
@@ -99,6 +101,89 @@ class OrbTools(
             "Cancela um lembrete pelo id.",
             schema(listOf("reminder_id"), "reminder_id" to prop("STRING", "Id do lembrete")),
         ),
+        decl(
+            "list_files",
+            "Lista arquivos e pastas em /sdcard. Use antes de renomear, mover ou apagar para conferir os caminhos. A pasta /sdcard/Android é bloqueada.",
+            schema(
+                emptyList(),
+                "path" to prop("STRING", "Pasta a listar; padrão /sdcard"),
+            ),
+        ),
+        decl(
+            "find_files",
+            "Procura arquivos e pastas por nome dentro de /sdcard. Não acessa /sdcard/Android.",
+            schema(
+                listOf("query"),
+                "query" to prop("STRING", "Nome ou parte do nome"),
+                "path" to prop("STRING", "Onde começar; padrão /sdcard"),
+                "max_results" to prop("INTEGER", "Máximo de resultados (1-100)"),
+            ),
+        ),
+        decl(
+            "file_info",
+            "Mostra tamanho, tipo, data e permissões de um arquivo ou pasta.",
+            schema(listOf("path"), "path" to prop("STRING", "Caminho do arquivo ou pasta")),
+        ),
+        decl(
+            "rename_file",
+            "Renomeia um arquivo ou pasta. Informe apenas o novo nome, sem barras.",
+            schema(
+                listOf("path", "new_name"),
+                "path" to prop("STRING", "Caminho atual"),
+                "new_name" to prop("STRING", "Novo nome, sem barras"),
+                "overwrite" to prop("BOOLEAN", "Substituir se o novo nome já existir"),
+            ),
+        ),
+        decl(
+            "move_file",
+            "Move um arquivo ou pasta. Se destination for uma pasta, move para dentro dela.",
+            schema(
+                listOf("source", "destination"),
+                "source" to prop("STRING", "Caminho de origem"),
+                "destination" to prop("STRING", "Caminho de destino"),
+                "overwrite" to prop("BOOLEAN", "Substituir se o destino já existir"),
+            ),
+        ),
+        decl(
+            "copy_file",
+            "Copia um arquivo ou pasta. Se destination for uma pasta, copia para dentro dela.",
+            schema(
+                listOf("source", "destination"),
+                "source" to prop("STRING", "Caminho de origem"),
+                "destination" to prop("STRING", "Caminho de destino"),
+                "overwrite" to prop("BOOLEAN", "Substituir se o destino já existir"),
+            ),
+        ),
+        decl(
+            "delete_file",
+            "Apaga um arquivo ou pasta. O usuário confirma a exclusão antes de executar.",
+            schema(listOf("path"), "path" to prop("STRING", "Caminho a apagar")),
+        ),
+        decl(
+            "make_folder",
+            "Cria uma pasta em /sdcard.",
+            schema(listOf("path"), "path" to prop("STRING", "Caminho da nova pasta")),
+        ),
+        decl(
+            "zip_files",
+            "Compacta arquivos e pastas em um ZIP. sources aceita caminhos separados por quebra de linha ou |.",
+            schema(
+                listOf("sources", "destination"),
+                "sources" to prop("STRING", "Caminhos de origem separados por quebra de linha ou |"),
+                "destination" to prop("STRING", "Caminho do .zip de destino"),
+                "overwrite" to prop("BOOLEAN", "Substituir o ZIP se já existir"),
+            ),
+        ),
+        decl(
+            "unzip_file",
+            "Extrai um ZIP para uma pasta. O usuário confirma antes de extrair.",
+            schema(
+                listOf("zip_path", "destination"),
+                "zip_path" to prop("STRING", "Caminho do arquivo .zip"),
+                "destination" to prop("STRING", "Pasta de destino"),
+                "overwrite" to prop("BOOLEAN", "Substituir arquivos existentes"),
+            ),
+        ),
     )
 
     suspend fun run(name: String, args: JsonObject): String = try {
@@ -112,6 +197,16 @@ class OrbTools(
             "set_reminder" -> setReminder(args.str("text"), args.str("when"))
             "list_reminders" -> listReminders()
             "cancel_reminder" -> cancelReminder(args.str("reminder_id"))
+            "list_files" -> files.list(args.str("path", "/sdcard"))
+            "find_files" -> files.find(args.str("query"), args.str("path", "/sdcard"), args.int("max_results", 50))
+            "file_info" -> files.info(args.str("path"))
+            "rename_file" -> files.rename(args.str("path"), args.str("new_name"), args.bool("overwrite"))
+            "move_file" -> files.move(args.str("source"), args.str("destination"), args.bool("overwrite"))
+            "copy_file" -> files.copy(args.str("source"), args.str("destination"), args.bool("overwrite"))
+            "delete_file" -> files.delete(args.str("path"))
+            "make_folder" -> files.makeFolder(args.str("path"))
+            "zip_files" -> files.zip(args.str("sources"), args.str("destination"), args.bool("overwrite"))
+            "unzip_file" -> files.unzip(args.str("zip_path"), args.str("destination"), args.bool("overwrite"))
             else -> "Ferramenta desconhecida: $name"
         }
     } catch (error: Exception) {
@@ -349,6 +444,9 @@ private fun JsonObject.int(key: String, default: Int = 0): Int =
 
 private fun JsonObject.double(key: String, default: Double = 0.0): Double =
     this[key]?.let { runCatching { it.jsonPrimitive.double }.getOrNull() } ?: default
+
+private fun JsonObject.bool(key: String, default: Boolean = false): Boolean =
+    this[key]?.let { runCatching { it.jsonPrimitive.boolean }.getOrNull() } ?: default
 
 private fun cleanHtml(value: String): String = value
     .replace(Regex("<[^>]+>"), "")
