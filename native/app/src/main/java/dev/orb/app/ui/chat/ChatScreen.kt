@@ -410,15 +410,11 @@ private fun Composer(
 }
 
 private fun statusColor(status: OrbStatus): Color = when (status) {
-    OrbStatus.Online -> Color(0xFF35D07F)
+    OrbStatus.Ready -> Color(0xFF35D07F)
     OrbStatus.MissingKey -> Color(0xFFFFB020)
-    OrbStatus.Connecting -> OrbMuted
-    OrbStatus.Offline -> Color(0xFFFF6B6B)
 }
 
 private fun statusLabel(state: OrbState): String = when (state.status) {
-    OrbStatus.Online -> "online · ${state.language}"
+    OrbStatus.Ready -> "pronto · ${state.language}"
     OrbStatus.MissingKey -> "falta a chave Gemini"
-    OrbStatus.Connecting -> "conectando…"
-    OrbStatus.Offline -> "offline"
 }

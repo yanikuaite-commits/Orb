@@ -13,22 +13,22 @@ import kotlinx.coroutines.launch
 private val Context.orbDataStore by preferencesDataStore(name = "orb_settings")
 
 data class OrbSettings(
-    val serverUrl: String = "",
-    val token: String = "",
     val ttsEnabled: Boolean = true,
     val assistantName: String = "Orb",
+    val userName: String = "",
     val language: String = "pt-BR",
+    val persona: String = "",
     val voice: String = "Charon",
     val ttsEngine: String = "device",
 )
 
 class SettingsStore(private val context: Context, scope: CoroutineScope) {
     private object Keys {
-        val serverUrl = stringPreferencesKey("server_url")
-        val token = stringPreferencesKey("token")
         val ttsEnabled = booleanPreferencesKey("tts_enabled")
         val assistantName = stringPreferencesKey("assistant_name")
+        val userName = stringPreferencesKey("user_name")
         val language = stringPreferencesKey("language")
+        val persona = stringPreferencesKey("persona")
         val voice = stringPreferencesKey("voice")
         val ttsEngine = stringPreferencesKey("tts_engine")
     }
@@ -38,11 +38,11 @@ class SettingsStore(private val context: Context, scope: CoroutineScope) {
 
     val flow: Flow<OrbSettings> = context.orbDataStore.data.map { prefs ->
         OrbSettings(
-            serverUrl = prefs[Keys.serverUrl].orEmpty(),
-            token = prefs[Keys.token].orEmpty(),
             ttsEnabled = prefs[Keys.ttsEnabled] ?: true,
             assistantName = prefs[Keys.assistantName] ?: "Orb",
+            userName = prefs[Keys.userName].orEmpty(),
             language = prefs[Keys.language] ?: "pt-BR",
+            persona = prefs[Keys.persona].orEmpty(),
             voice = prefs[Keys.voice] ?: "Charon",
             ttsEngine = prefs[Keys.ttsEngine] ?: "device",
         )
@@ -55,11 +55,11 @@ class SettingsStore(private val context: Context, scope: CoroutineScope) {
     suspend fun save(settings: OrbSettings) {
         current = settings
         context.orbDataStore.edit { prefs ->
-            prefs[Keys.serverUrl] = settings.serverUrl
-            prefs[Keys.token] = settings.token
             prefs[Keys.ttsEnabled] = settings.ttsEnabled
             prefs[Keys.assistantName] = settings.assistantName
+            prefs[Keys.userName] = settings.userName
             prefs[Keys.language] = settings.language
+            prefs[Keys.persona] = settings.persona
             prefs[Keys.voice] = settings.voice
             prefs[Keys.ttsEngine] = settings.ttsEngine
         }

@@ -68,7 +68,7 @@ fun OrbRoot(container: AppContainer) {
     }
 
     if (state.setupRequired) {
-        SetupScreen(state = state, onConnect = vm::connect)
+        SetupScreen(state = state, onActivate = vm::activate)
         return
     }
 
@@ -145,6 +145,7 @@ fun OrbRoot(container: AppContainer) {
                 SettingsScreen(
                     state = state,
                     onSave = vm::saveSettings,
+                    onRemoveKey = vm::removeApiKey,
                     onBack = { nav.popBackStack() },
                 )
             }

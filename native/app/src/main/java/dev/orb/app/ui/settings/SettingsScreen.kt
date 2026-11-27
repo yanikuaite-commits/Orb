@@ -3,7 +3,6 @@ package dev.orb.app.ui.settings
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,12 +13,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,6 +35,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,7 +43,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -51,7 +51,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.orb.app.ui.OrbState
-import dev.orb.app.ui.OrbStatus
 import dev.orb.app.ui.theme.OrbBg
 import dev.orb.app.ui.theme.OrbLine
 import dev.orb.app.ui.theme.OrbMuted
@@ -63,11 +62,10 @@ import dev.orb.app.ui.theme.OrbText
 @Composable
 fun SettingsScreen(
     state: OrbState,
-    onSave: (String, String, String, String, String, String, String, String, String) -> Unit,
+    onSave: (String, String, String, String, String, String, String) -> Unit,
+    onRemoveKey: () -> Unit,
     onBack: () -> Unit,
 ) {
-    var server by remember(state.serverUrl) { mutableStateOf(state.serverUrl) }
-    var token by remember(state.token) { mutableStateOf(state.token) }
     var assistant by remember(state.assistantName) { mutableStateOf(state.assistantName) }
     var user by remember(state.userName) { mutableStateOf(state.userName) }
     var language by remember(state.language) { mutableStateOf(state.language) }
@@ -75,6 +73,7 @@ fun SettingsScreen(
     var ttsEngine by remember(state.ttsEngine) { mutableStateOf(state.ttsEngine) }
     var voice by remember(state.voice) { mutableStateOf(state.voice) }
     var apiKey by remember { mutableStateOf("") }
+    var confirmRemove by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize().background(OrbBg)) {
         Row(
@@ -92,22 +91,35 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
         ) {
-            SectionTitle("Servidor")
-            OutlinedTextField(
-                value = server,
-                onValueChange = { server = it },
-                label = { Text("Endereço") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+            SectionTitle("Chave Gemini")
+            Surface(
                 shape = RoundedCornerShape(12.dp),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                colors = orbFieldColors(),
-            )
+                color = OrbPanel,
+                border = BorderStroke(1.dp, OrbLine),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Filled.Key,
+                        contentDescription = null,
+                        tint = if (state.apiKeySet) Color(0xFF35D07F) else OrbMuted,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = if (state.apiKeySet) "Chave configurada no aparelho" else "Sem chave",
+                        color = OrbText,
+                        fontSize = 12.sp,
+                    )
+                }
+            }
             Spacer(Modifier.height(10.dp))
             OutlinedTextField(
-                value = token,
-                onValueChange = { token = it },
-                label = { Text("Token (opcional)") },
+                value = apiKey,
+                onValueChange = { apiKey = it },
+                label = { Text("Nova chave (opcional)") },
+                placeholder = {
+                    Text(if (state.apiKeySet) "deixe em branco para manter" else "AIza…")
+                },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -115,8 +127,17 @@ fun SettingsScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 colors = orbFieldColors(),
             )
-            Spacer(Modifier.height(8.dp))
-            StatusCard(state)
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "A chave fica criptografada no celular e é enviada só para o Google. Se você compartilhar o APK, cada pessoa usa a própria chave.",
+                color = OrbMuted,
+                fontSize = 11.sp,
+            )
+            if (state.apiKeySet) {
+                TextButton(onClick = { confirmRemove = true }) {
+                    Text("Remover chave do aparelho", color = OrbRed, fontSize = 12.sp)
+                }
+            }
 
             SectionTitle("Assistente")
             OutlinedTextField(
@@ -174,7 +195,7 @@ fun SettingsScreen(
             }
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "A voz do aparelho funciona offline. A voz Gemini usa o endpoint /api/tts.",
+                text = "A voz do aparelho funciona offline. A voz Gemini é gerada direto pelo Google.",
                 color = OrbMuted,
                 fontSize = 11.sp,
             )
@@ -183,32 +204,10 @@ fun SettingsScreen(
                 VoicePicker(state.voices, voice) { voice = it }
             }
 
-            SectionTitle("Chave Gemini")
-            OutlinedTextField(
-                value = apiKey,
-                onValueChange = { apiKey = it },
-                label = { Text("API key") },
-                placeholder = {
-                    Text(if (state.apiKeySet) "configurada — deixe em branco para manter" else "AIza…")
-                },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                colors = orbFieldColors(),
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = "A chave fica no servidor, não no APK. O app só a envia uma vez.",
-                color = OrbMuted,
-                fontSize = 11.sp,
-            )
-
             Spacer(Modifier.height(22.dp))
             Button(
                 onClick = {
-                    onSave(server, token, assistant, user, language, persona, ttsEngine, voice, apiKey)
+                    onSave(assistant, user, language, persona, ttsEngine, voice, apiKey)
                 },
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
@@ -227,7 +226,7 @@ fun SettingsScreen(
             }
             Spacer(Modifier.height(12.dp))
             Text(
-                text = "Orb 1.0 · Licença Orb 1.0",
+                text = "Orb 2.0 · Licença Orb 1.0",
                 color = OrbMuted,
                 fontSize = 11.sp,
                 modifier = Modifier.fillMaxWidth(),
@@ -235,6 +234,29 @@ fun SettingsScreen(
             )
             Spacer(Modifier.height(24.dp))
         }
+    }
+
+    if (confirmRemove) {
+        AlertDialog(
+            onDismissRequest = { confirmRemove = false },
+            title = { Text("Remover a chave Gemini?") },
+            text = {
+                Text("O Orb para de responder até você colar uma chave nova. Memória, histórico e lembretes continuam no aparelho.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmRemove = false
+                        apiKey = ""
+                        onRemoveKey()
+                    },
+                ) { Text("Remover", color = OrbRed) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmRemove = false }) { Text("Cancelar") }
+            },
+            containerColor = OrbPanel,
+        )
     }
 }
 
@@ -248,28 +270,6 @@ private fun SectionTitle(text: String) {
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier.padding(top = 20.dp, bottom = 8.dp),
     )
-}
-
-@Composable
-private fun StatusCard(state: OrbState) {
-    val label = when (state.status) {
-        OrbStatus.Online -> "online"
-        OrbStatus.MissingKey -> "conectado, falta a chave Gemini"
-        OrbStatus.Connecting -> "conectando…"
-        OrbStatus.Offline -> "offline"
-    }
-    Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = OrbPanel,
-        border = BorderStroke(1.dp, OrbLine),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(8.dp).clip(CircleShape).background(statusColor(state.status)))
-            Spacer(Modifier.width(8.dp))
-            Text(label, color = OrbText, fontSize = 12.sp)
-        }
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -311,10 +311,3 @@ internal fun orbFieldColors() = OutlinedTextFieldDefaults.colors(
     focusedTextColor = OrbText,
     unfocusedTextColor = OrbText,
 )
-
-private fun statusColor(status: OrbStatus): Color = when (status) {
-    OrbStatus.Online -> Color(0xFF35D07F)
-    OrbStatus.MissingKey -> Color(0xFFFFB020)
-    OrbStatus.Connecting -> OrbMuted
-    OrbStatus.Offline -> Color(0xFFFF6B6B)
-}

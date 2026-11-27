@@ -1,7 +1,6 @@
 package dev.orb.app.ui.settings
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -45,9 +44,9 @@ import dev.orb.app.ui.theme.OrbRed
 import dev.orb.app.ui.theme.OrbText
 
 @Composable
-fun SetupScreen(state: OrbState, onConnect: (String, String) -> Unit) {
-    var server by remember { mutableStateOf("") }
-    var token by remember { mutableStateOf("") }
+fun SetupScreen(state: OrbState, onActivate: (String, String) -> Unit) {
+    var apiKey by remember { mutableStateOf("") }
+    var userName by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -63,10 +62,10 @@ fun SetupScreen(state: OrbState, onConnect: (String, String) -> Unit) {
         Spacer(Modifier.height(28.dp))
         OrbMark(size = 150.dp)
         Spacer(Modifier.height(20.dp))
-        Text("Conectar ao servidor", color = OrbText, fontSize = 24.sp)
+        Text("Ativar o Orb", color = OrbText, fontSize = 24.sp)
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "O Orb é o rosto; o cérebro roda no seu FastAPI + Gemini. Informe o endereço do backend para começar.",
+            text = "O Orb roda inteiro no seu celular. Para pensar e falar, ele usa a API Gemini do Google — sem PC, sem servidor e sem token. Cole sua chave do Google AI Studio; ela fica criptografada no aparelho.",
             color = OrbMuted,
             fontSize = 13.sp,
             textAlign = TextAlign.Center,
@@ -74,48 +73,39 @@ fun SetupScreen(state: OrbState, onConnect: (String, String) -> Unit) {
         )
         Spacer(Modifier.height(24.dp))
         OutlinedTextField(
-            value = server,
-            onValueChange = { server = it },
+            value = apiKey,
+            onValueChange = { apiKey = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Endereço do servidor") },
-            placeholder = { Text("https://orb.seudominio.com") },
+            label = { Text("Chave Gemini") },
+            placeholder = { Text("AIza…") },
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
+            visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Uri,
+                keyboardType = KeyboardType.Password,
                 imeAction = ImeAction.Next,
             ),
             colors = orbFieldColors(),
         )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
-            value = token,
-            onValueChange = { token = it },
+            value = userName,
+            onValueChange = { userName = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Token (opcional)") },
-            placeholder = { Text("ORB_TOKEN, se você configurou") },
+            label = { Text("Seu nome (opcional)") },
+            placeholder = { Text("Como o Orb deve te chamar") },
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Password,
-                imeAction = ImeAction.Done,
-            ),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             colors = orbFieldColors(),
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = "Dica: em rede local use http://192.168.0.10:8000. Na internet, use HTTPS.",
-            color = OrbMuted,
-            fontSize = 11.sp,
         )
         state.snackbar?.let { message ->
             Spacer(Modifier.height(12.dp))
-            Text(message, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+            Text(message, color = MaterialTheme.colorScheme.error, fontSize = 12.sp, textAlign = TextAlign.Center)
         }
         Spacer(Modifier.height(20.dp))
         Button(
-            onClick = { onConnect(server, token) },
+            onClick = { onActivate(apiKey, userName) },
             enabled = !state.busy,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(14.dp),
@@ -128,14 +118,22 @@ fun SetupScreen(state: OrbState, onConnect: (String, String) -> Unit) {
                     strokeWidth = 2.dp,
                 )
             } else {
-                Text("Conectar", fontWeight = FontWeight.SemiBold)
+                Text("Ativar Orb", fontWeight = FontWeight.SemiBold)
             }
         }
         Spacer(Modifier.height(14.dp))
         Text(
-            text = "A chave Gemini é configurada depois, em Ajustes.",
+            text = "Obtenha uma chave gratuita em aistudio.google.com/apikey",
+            color = OrbRed,
+            fontSize = 12.sp,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = "Internet é necessária para falar com o Gemini. Memória, histórico e lembretes ficam no aparelho.",
             color = OrbMuted,
             fontSize = 11.sp,
+            textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(28.dp))
     }
