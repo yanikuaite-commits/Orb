@@ -76,6 +76,10 @@ native voice. It does not call the FastAPI backend. Build it with
 Android SDK 35). CI builds `orb-native-debug-apk` in
 `.github/workflows/android-native.yml`.
 
+CI builds both `orb-native-debug-apk` and `orb-native-release-apk`. The release
+uses `ORB_KEYSTORE_PATH` when the `ORB_KEYSTORE_*` secrets are present;
+otherwise it falls back to the debug signing config.
+
 The **Capacitor app in `mobile/android/`** is the hybrid fallback:
 `dev.orb.mobile`, same `www/` assets in a WebView. CI builds `orb-debug-apk` in
 `.github/workflows/android.yml`.

@@ -140,8 +140,15 @@ Foi feito para o que a PWA não consegue entregar:
 
 O APK de debug é compilado no GitHub Actions
 (`.github/workflows/android-native.yml`): aba **Actions → Native Android APK →
-artifact `orb-native-debug-apk`**. O APK tem cerca de 20 MB, é assinado com a
-chave de debug e instala direto no celular.
+artifact `orb-native-debug-apk`**. O APK de debug tem cerca de 20 MB, é assinado
+com a chave de debug e instala direto no celular.
+
+O CI também gera `orb-native-release-apk` (~14 MB, não debuggable). Sem os
+segredos de keystore, ele usa a chave de debug — serve para sideload, mas builds
+diferentes podem exigir desinstalar antes de atualizar. Para uma chave fixa,
+adicione os segredos `ORB_KEYSTORE_BASE64`, `ORB_KEYSTORE_PASSWORD`,
+`ORB_KEY_ALIAS` e `ORB_KEY_PASSWORD`; o workflow decodifica o `.jks` e o Gradle
+assina o release com ele.
 
 ### Rodar no Android
 
