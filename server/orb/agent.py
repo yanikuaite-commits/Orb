@@ -7,7 +7,7 @@ from google.genai import types
 
 from . import llm, memory, prompts, settings, tools
 
-MAX_TOOL_ROUNDS = 5
+MAX_TOOL_ROUNDS = 8
 HISTORY_TURNS = 16
 
 
@@ -69,10 +69,13 @@ class Agent:
                         "ok": False,
                         "error": "invalid_api_key",
                     }
+                detail = llm.last_detail()
                 return {
                     "reply": (
-                        "Não consegui falar com o modelo agora. Pode ser cota esgotada "
-                        "ou falta de conexão. Tente de novo em alguns instantes."
+                        "Não consegui falar com o modelo agora"
+                        + (f" ({detail})" if detail else "")
+                        + ". Pode ser cota, modelo indisponível ou falta de conexão. "
+                        "Tente de novo em alguns instantes."
                     ),
                     "tools": trace,
                     "ok": False,

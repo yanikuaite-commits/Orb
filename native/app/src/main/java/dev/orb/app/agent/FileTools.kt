@@ -50,35 +50,74 @@ class FileTools(
         }
     }
 
-    suspend fun find(query: String, path: String, maxResults: Int): String = io {
+    suspend fun find(
+        query: String,
+        path: String,
+        maxResults: Int,
+        minSizeMb: Int,
+        maxSizeMb: Int,
+    ): String = io {
         if (!hasAccess()) return@io NO_ACCESS
         val term = query.trim()
-        if (term.isEmpty()) return@io "Informe o nome ou parte do nome para procurar."
         val start = resolve(path.ifBlank { "/sdcard" }) ?: return@io INVALID_PATH
         if (!start.exists()) return@io "Não encontrei: ${display(start)}"
         val limit = maxResults.coerceIn(1, MAX_FIND)
+        val minBytes = minSizeMb.coerceAtLeast(0).toLong() * MB
+        val maxBytes = maxSizeMb.coerceAtLeast(0).toLong() * MB
+        if (maxBytes > 0L && maxBytes < minBytes) return@io "O tamanho máximo é menor que o mínimo."
+        val hasSizeFilter = minBytes > 0L || maxBytes > 0L
+        if (term.isEmpty() && !hasSizeFilter) return@io "Informe o nome ou parte do nome para procurar."
         val found = mutableListOf<File>()
         val stack = ArrayDeque<Pair<File, Int>>()
         stack.addLast(start to 0)
+        var scanned = 0
+        var budgetHit = false
+        val deadline = System.currentTimeMillis() + FIND_TIME_BUDGET_MS
         while (stack.isNotEmpty() && found.size < limit) {
+            if (System.currentTimeMillis() > deadline) {
+                budgetHit = true
+                break
+            }
             val (current, depth) = stack.removeLast()
-            if (current != start && current.name.contains(term, ignoreCase = true)) found += current
+            if (current != start && (term.isEmpty() || current.name.contains(term, ignoreCase = true))) {
+                val size = if (current.isDirectory) -1L else current.length()
+                val sizeOk = if (!hasSizeFilter) {
+                    true
+                } else {
+                    size >= 0L && size >= minBytes && (maxBytes == 0L || size <= maxBytes)
+                }
+                if (sizeOk) found += current
+            }
             if (current.isDirectory && depth < MAX_DEPTH) {
-                current.listFiles()?.forEach { child ->
+                val children = current.listFiles() ?: continue
+                for (child in children) {
+                    if (++scanned > MAX_FIND_SCAN) {
+                        budgetHit = true
+                        break
+                    }
                     if (!isSymlink(child) && !FilePaths.isBlocked(root, child)) {
                         stack.addLast(child to depth + 1)
                     }
                 }
+                if (budgetHit) break
             }
         }
-        if (found.isEmpty()) return@io "Nenhum item com \"$term\" em ${display(start)}."
+        val filterLabel = if (term.isEmpty()) "no filtro de tamanho" else "com \"$term\""
+        if (found.isEmpty()) {
+            return@io if (budgetHit) {
+                "Nenhum item $filterLabel encontrado antes do limite de busca. Refine a pasta ou o termo."
+            } else {
+                "Nenhum item $filterLabel em ${display(start)}."
+            }
+        }
         buildString {
-            appendLine("Encontrei ${found.size} item(ns) com \"$term\" em ${display(start)}:")
+            appendLine("Encontrei ${found.size} item(ns) $filterLabel em ${display(start)}:")
             found.forEach { file ->
                 val suffix = if (file.isDirectory) " [pasta]" else " (${formatSize(file.length())})"
                 appendLine("- ${display(file)}$suffix")
             }
             if (found.size >= limit) appendLine("Limite de $limit resultados atingido.")
+            if (budgetHit) appendLine("Busca interrompida pelo limite de tempo/itens; refine a pasta ou o termo.")
         }
     }
 
@@ -417,6 +456,9 @@ class FileTools(
         const val MAX_LIST = 200
         const val MAX_FIND = 100
         const val MAX_DEPTH = 8
+        const val MAX_FIND_SCAN = 50_000
+        const val FIND_TIME_BUDGET_MS = 15_000L
+        const val MB = 1024L * 1024L
         const val MAX_ZIP_ENTRIES = 10_000
         const val MAX_MEASURE_FILES = 100_000
         const val MAX_ENTRY_BYTES = 512L * 1024 * 1024

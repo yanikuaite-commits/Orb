@@ -98,7 +98,7 @@ async def require_token(request: Request) -> None:
 
 
 class ChatRequest(BaseModel):
-    message: str = Field(..., min_length=1, max_length=8000)
+    message: str = Field(..., min_length=1, max_length=32000)
 
 
 class TTSRequest(BaseModel):

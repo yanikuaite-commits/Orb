@@ -10,6 +10,7 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import java.nio.ByteBuffer
@@ -97,6 +98,15 @@ data class GeminiRequest(
 )
 
 @Serializable
+data class GeminiModelInfo(
+    val name: String = "",
+    @SerialName("supportedGenerationMethods") val methods: List<String> = emptyList(),
+)
+
+@Serializable
+data class GeminiModelsResponse(val models: List<GeminiModelInfo> = emptyList())
+
+@Serializable
 data class GeminiResponse(
     val candidates: List<GeminiCandidate> = emptyList(),
     val promptFeedback: GeminiPromptFeedback? = null,
@@ -137,7 +147,7 @@ enum class Tier { Fast, Smart }
 
 data class SearchResult(val text: String, val sources: List<String>)
 
-class GeminiException(val code: Int, body: String) : Exception("Gemini HTTP $code: ${body.take(400)}") {
+class GeminiException(val code: Int, val body: String) : Exception("Gemini HTTP $code: ${body.take(400)}") {
     val isQuota: Boolean = code == 429 ||
         body.contains("RESOURCE_EXHAUSTED", ignoreCase = true) ||
         body.contains("quota", ignoreCase = true) ||
@@ -158,14 +168,23 @@ class GeminiClient(
 
     fun key(): String = keys.gemini()
 
+    @Volatile
+    private var discoveredModels: List<String> = emptyList()
+
     suspend fun validateKey(key: String): Result<Unit> {
         val trimmed = key.trim()
         if (trimmed.isBlank()) return Result.failure(IllegalArgumentException("empty key"))
         return try {
-            val response = http.get("$BASE/models") {
+            val response = http.get("$BASE/models?pageSize=200") {
                 header("x-goog-api-key", trimmed)
             }
             if (response.status.isSuccess()) {
+                discoveredModels = runCatching {
+                    response.body<GeminiModelsResponse>().models
+                        .filter { it.methods.isEmpty() || "generateContent" in it.methods }
+                        .map { it.name.removePrefix("models/") }
+                        .filter { it.isNotBlank() }
+                }.getOrDefault(emptyList())
                 Result.success(Unit)
             } else {
                 Result.failure(GeminiException(response.status.value, response.bodyAsText()))
@@ -180,7 +199,8 @@ class GeminiClient(
     suspend fun generate(model: String, request: GeminiRequest): GeminiResponse {
         val requested = model.trim().removePrefix("models/")
         val preferred = if (requested.isBlank()) emptyList() else listOf(requested)
-        return generate((preferred + ladder(Tier.Smart)).distinct(), request)
+        val fallbacks = (ladder(Tier.Smart) + discoveredModels).distinct()
+        return generate((preferred + fallbacks).distinct(), request)
     }
 
     private suspend fun generate(models: List<String>, request: GeminiRequest): GeminiResponse {
@@ -309,6 +329,9 @@ class GeminiClient(
             "gemini-3.5-flash-lite",
             "gemini-3.1-flash-lite",
             "gemini-3.6-flash",
+            "gemini-2.5-flash-lite",
+            "gemini-2.5-flash",
+            "gemini-2.0-flash",
             "gemini-flash-latest",
         )
         val SMART_LADDER = listOf(
@@ -317,6 +340,9 @@ class GeminiClient(
             "gemini-3.5-flash-lite",
             "gemini-3.8-flash",
             "gemini-3.1-flash-lite",
+            "gemini-2.5-flash",
+            "gemini-2.5-pro",
+            "gemini-2.0-flash",
             "gemini-flash-latest",
         )
         val cooldowns = mutableMapOf<String, Long>()

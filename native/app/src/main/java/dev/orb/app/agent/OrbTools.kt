@@ -111,12 +111,14 @@ class OrbTools(
         ),
         decl(
             "find_files",
-            "Procura arquivos e pastas por nome dentro de /sdcard. Não acessa /sdcard/Android.",
+            "Procura arquivos e pastas por nome dentro de /sdcard. Aceita tamanho mínimo/máximo em MB (0 = sem limite) e interrompe buscas muito demoradas. Não acessa /sdcard/Android.",
             schema(
-                listOf("query"),
-                "query" to prop("STRING", "Nome ou parte do nome"),
+                emptyList(),
+                "query" to prop("STRING", "Nome ou parte do nome; vazio = qualquer nome quando há filtro de tamanho"),
                 "path" to prop("STRING", "Onde começar; padrão /sdcard"),
                 "max_results" to prop("INTEGER", "Máximo de resultados (1-100)"),
+                "min_size_mb" to prop("INTEGER", "Tamanho mínimo em MB; 0 = sem mínimo"),
+                "max_size_mb" to prop("INTEGER", "Tamanho máximo em MB; 0 = sem máximo"),
             ),
         ),
         decl(
@@ -187,7 +189,7 @@ class OrbTools(
     )
 
     suspend fun run(name: String, args: JsonObject): String = try {
-        when (name) {
+        val result = when (name) {
             "web_search" -> webSearch(args.str("query"), args.str("mode", "search"))
             "get_weather" -> weather(args.str("city"), args.int("days", 3))
             "remember" -> remember(args.str("key"), args.str("value"), args.str("category", "notes"))
@@ -198,7 +200,13 @@ class OrbTools(
             "list_reminders" -> listReminders()
             "cancel_reminder" -> cancelReminder(args.str("reminder_id"))
             "list_files" -> files.list(args.str("path", "/sdcard"))
-            "find_files" -> files.find(args.str("query"), args.str("path", "/sdcard"), args.int("max_results", 50))
+            "find_files" -> files.find(
+                args.str("query"),
+                args.str("path", "/sdcard"),
+                args.int("max_results", 50),
+                args.int("min_size_mb"),
+                args.int("max_size_mb"),
+            )
             "file_info" -> files.info(args.str("path"))
             "rename_file" -> files.rename(args.str("path"), args.str("new_name"), args.bool("overwrite"))
             "move_file" -> files.move(args.str("source"), args.str("destination"), args.bool("overwrite"))
@@ -209,8 +217,9 @@ class OrbTools(
             "unzip_file" -> files.unzip(args.str("zip_path"), args.str("destination"), args.bool("overwrite"))
             else -> "Ferramenta desconhecida: $name"
         }
+        cap(result)
     } catch (error: Exception) {
-        "A ferramenta $name falhou: ${error.message ?: error.javaClass.simpleName}"
+        cap("A ferramenta $name falhou: ${error.message ?: error.javaClass.simpleName}")
     }
 
     private suspend fun webSearch(query: String, mode: String): String {
@@ -435,6 +444,14 @@ class OrbTools(
         )
     }
 }
+
+private fun cap(value: String): String {
+    if (value.length <= MAX_TOOL_RESULT_CHARS) return value
+    return value.take(MAX_TOOL_RESULT_CHARS) +
+        "\n... (resultado truncado; ${value.length} caracteres no total)"
+}
+
+private const val MAX_TOOL_RESULT_CHARS = 16_000
 
 private fun JsonObject.str(key: String, default: String = ""): String =
     this[key]?.let { runCatching { it.jsonPrimitive.content }.getOrNull() } ?: default

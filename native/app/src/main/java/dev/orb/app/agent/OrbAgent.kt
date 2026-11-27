@@ -11,6 +11,9 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+private fun String.snippet(limit: Int = 220): String =
+    replace(Regex("\\s+"), " ").trim().take(limit)
+
 data class AgentResult(
     val reply: String,
     val tools: List<ToolTrace> = emptyList(),
@@ -33,9 +36,10 @@ class OrbAgent(
             )
         }
 
+        val userMessage = message.take(MAX_USER_MESSAGE_CHARS)
         val conversation = client.conversation(
             system = systemPrompt(),
-            history = history.messages(HISTORY_TURNS * 2).map { it.role to it.text },
+            history = historyPairs(),
             tools = tools.specs(),
             model = model,
         )
@@ -43,7 +47,7 @@ class OrbAgent(
         var reply = ""
 
         try {
-            var turn = conversation.send(message)
+            var turn = conversation.send(userMessage)
             for (round in 0 until MAX_TOOL_ROUNDS) {
                 when (val current = turn) {
                     is LlmTurn.Reply -> {
@@ -82,23 +86,39 @@ class OrbAgent(
         if (reply.isBlank()) {
             reply = "Fiz várias consultas mas não consegui fechar a resposta. Pode reformular?"
         }
-        history.append("user", message)
-        history.append("assistant", reply)
+        history.append("user", userMessage)
+        history.append("assistant", reply.take(MAX_HISTORY_MESSAGE_CHARS))
         return AgentResult(reply = reply, tools = trace)
+    }
+
+    private fun historyPairs(): List<Pair<String, String>> {
+        val pairs = ArrayDeque<Pair<String, String>>()
+        var used = 0
+        for (message in history.messages(HISTORY_TURNS * 2).asReversed()) {
+            val text = message.text.take(MAX_HISTORY_MESSAGE_CHARS)
+            if (text.isBlank()) continue
+            if (used + text.length > MAX_HISTORY_CHARS) break
+            pairs.addFirst(message.role to text)
+            used += text.length
+        }
+        return pairs.toList()
     }
 
     private fun failureDetail(error: Exception): String = when (error) {
         is GeminiException -> when (error.code) {
-            404 -> "Gemini HTTP 404, modelo não encontrado"
+            400 -> "Gemini HTTP 400: ${error.body.snippet()}"
+            404 -> "Gemini HTTP 404, modelo não encontrado: ${error.body.snippet()}"
+            413 -> "Gemini HTTP 413, pedido grande demais"
             429 -> "Gemini HTTP 429, cota"
-            else -> "Gemini HTTP ${error.code}"
+            else -> "Gemini HTTP ${error.code}: ${error.body.snippet()}"
         }
         is GroqException -> when (error.code) {
-            404 -> "Groq HTTP 404, modelo não encontrado"
+            404 -> "Groq HTTP 404, modelo não encontrado: ${error.body.snippet()}"
+            413 -> "Groq HTTP 413, pedido grande demais"
             429 -> "Groq HTTP 429, cota"
-            else -> "Groq HTTP ${error.code}"
+            else -> "Groq HTTP ${error.code}: ${error.body.snippet()}"
         }
-        else -> error.message?.take(120) ?: error.javaClass.simpleName
+        else -> error.message?.take(160) ?: error.javaClass.simpleName
     }
 
     private fun systemPrompt(): String {
@@ -177,7 +197,10 @@ $userLine$memoryBlock
     }
 
     private companion object {
-        const val MAX_TOOL_ROUNDS = 5
+        const val MAX_TOOL_ROUNDS = 8
         const val HISTORY_TURNS = 16
+        const val MAX_HISTORY_CHARS = 24_000
+        const val MAX_HISTORY_MESSAGE_CHARS = 4_000
+        const val MAX_USER_MESSAGE_CHARS = 8_000
     }
 }

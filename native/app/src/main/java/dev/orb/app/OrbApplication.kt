@@ -51,9 +51,9 @@ class AppContainer(context: Context) {
     private val http = HttpClient(OkHttp) {
         install(ContentNegotiation) { json(json) }
         install(HttpTimeout) {
-            requestTimeoutMillis = 120_000
+            requestTimeoutMillis = 180_000
             connectTimeoutMillis = 20_000
-            socketTimeoutMillis = 120_000
+            socketTimeoutMillis = 180_000
         }
     }
 

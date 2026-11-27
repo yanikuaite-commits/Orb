@@ -67,7 +67,7 @@ data class GroqChoice(
     @SerialName("finish_reason") val finishReason: String? = null,
 )
 
-class GroqException(val code: Int, body: String) : Exception("Groq HTTP $code: ${body.take(400)}") {
+class GroqException(val code: Int, val body: String) : Exception("Groq HTTP $code: ${body.take(400)}") {
     val isQuota: Boolean = code == 429 ||
         body.contains("rate limit", ignoreCase = true) ||
         body.contains("quota", ignoreCase = true)
