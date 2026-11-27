@@ -1,7 +1,7 @@
 # Orb — Assistente Pessoal de IA para o seu bolso
 
-Um assistente de voz e texto que roda no seu servidor e abre como aplicativo no
-celular. Conversa, pesquisa na web, consulta o clima, lembra de fatos sobre você
+Um assistente de voz e texto que roda no seu servidor, com **app Android
+nativo em Kotlin** e uma PWA instalável como alternativa. Conversa, pesquisa na web, consulta o clima, lembra de fatos sobre você
 e dispara lembretes — com uma interface HUD feita para a tela pequena.
 
 Inspirado no **JARVIS (Mark LVII)**, de FatihMakes: a ideia da escada de
@@ -25,7 +25,7 @@ e um app móvel instalável — código escrito de forma independente.
 
 ```
 ┌─────────────────────────┐         HTTPS / WSS        ┌──────────────────────────┐
-│  Celular (PWA/Capacitor)│  ───────────────────────▶  │  Servidor Python         │
+│  Celular (Kotlin/PWA)   │  ───────────────────────▶  │  Servidor Python         │
 │  • HUD e chat           │                            │  • FastAPI               │
 │  • microfone → WAV      │  ◀───────────────────────  │  • Agente + ferramentas  │
 │  • voz (TTS)            │        JSON + áudio        │  • Memória e lembretes   │
@@ -43,9 +43,9 @@ app pode ser aberto em vários aparelhos.
 - **Memória de longo prazo** com painel para ver e apagar cada fato.
 - **Pesquisa na web** com fontes (Gemini grounding, com fallback DuckDuckGo).
 - **Clima** de qualquer cidade, via Open-Meteo (sem chave extra).
-- **Lembretes** com notificação no celular enquanto o app estiver aberto.
+- **Lembretes** com alarme no Android, mesmo com o app fechado (na PWA, enquanto aberta).
 - **Voz do aparelho** (grátis) ou **voz Gemini** (mais natural).
-- **Instalável** como PWA no Android/iOS, ou empacotável como APK/IPA.
+- **App Android nativo** em Kotlin + Jetpack Compose, com PWA instalável como alternativa.
 
 ## Começando (5 minutos)
 
@@ -115,60 +115,58 @@ Defina `ORB_TOKEN` com uma string longa e aleatória. Quando ele existe:
 
 Isso é essencial se o servidor estiver exposto na internet.
 
-## Aplicativo nativo (Android / iOS)
+## App Android nativo (Kotlin)
 
-O `mobile/www` é o app web; o [Capacitor](https://capacitorjs.com/) empacota o
-mesmo código como app nativo. A plataforma **Android já está gerada** em
-`mobile/android/`, e o APK é produzido pelo GitHub Actions
-(`.github/workflows/android.yml`) a cada push ou PR: aba **Actions → Android APK →
-artifact `orb-debug-apk`**.
+O cliente principal de celular é um app **Android nativo em Kotlin + Jetpack
+Compose**, em `native/`. Ele conversa com o mesmo backend FastAPI e foi feito
+para o que a PWA não consegue entregar:
+
+- chat com o HUD do Orb, voz (`SpeechRecognizer`) e resposta falada (TTS do
+  aparelho ou voz Gemini);
+- memória e lembretes;
+- **alarmes que tocam com o app fechado** (`AlarmManager` + notificação);
+- tema escuro, ícone adaptativo e splash nativos.
+
+O APK de debug é compilado no GitHub Actions
+(`.github/workflows/android-native.yml`): aba **Actions → Native Android APK →
+artifact `orb-native-debug-apk`**. O APK tem cerca de 19 MB, é assinado com a
+chave de debug e instala direto no celular.
 
 ### Rodar no Android
 
-Requisitos: Node 20+, JDK 17 e Android Studio (SDK 34).
+Requisitos: JDK 17 + Android SDK 35 (Android Studio serve).
 
 ```bash
-cd mobile
-npm ci
-npm run sync                 # copia www/ para o projeto Android
-npm run build:android        # gera o APK de debug
-# APK: mobile/android/app/build/outputs/apk/debug/app-debug.apk
-
-npm run open:android         # ou abra no Android Studio
+cd native
+./gradlew :app:testDebugUnitTest
+./gradlew :app:assembleDebug
+# APK: native/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Para instalar no celular, copie o APK e permita "instalar de fontes
-desconhecidas". O APK de debug é assinado com a chave de debug; para publicar na
-Play Store, gere um AAB assinado.
-
-### Apontar para o servidor
-
-O app nativo não compartilha o domínio da PWA. Na primeira execução, abra
-**⚙ Ajustes → Endereço do servidor** e informe a URL do backend
-(`https://...` ou `http://192.168.x.x:8000`). Para desenvolvimento em HTTP, o
-manifesto já permite tráfego cleartext e mixed content; em produção, use HTTPS e
-volte `allowMixedContent` para `false` em `mobile/capacitor.config.json`.
-
-Se preferir uma casca que sempre carrega a versão publicada, adicione ao
-`capacitor.config.json`:
-
-```json
-"server": { "url": "https://orb.seudominio.com" }
-```
+Na primeira execução, informe o endereço do backend
+(`https://...` ou `http://192.168.x.x:8000`). O manifesto permite tráfego
+cleartext para desenvolvimento local; em produção, use HTTPS.
 
 ### iOS
 
-Precisa de macOS + Xcode + CocoaPods:
+O app Kotlin é Android-only. Para iOS, o caminho atual é a PWA/Capacitor
+(abaixo) ou um cliente Swift separado.
+
+### PWA e Capacitor (alternativa)
+
+O `mobile/www` continua sendo a PWA instalável e a base do antigo app híbrido
+Capacitor (`mobile/android/`, `appId dev.orb.mobile`). Ele é útil para abrir no
+navegador, no iPhone e para testar rápido sem instalar APK.
 
 ```bash
 cd mobile
 npm ci
-npm run add:ios
 npm run sync
-npm run open:ios
+npm run build:android        # APK híbrido, artifact orb-debug-apk
 ```
 
-A pasta `mobile/ios/` não é versionada: é gerada no Mac.
+O APK híbrido é menor, mas depende do WebView e não tem alarmes nativos com o
+app fechado. O app Kotlin é o recomendado para Android.
 
 ## Ferramentas disponíveis
 
@@ -226,10 +224,13 @@ server/
   tests/               # 40 testes, sem rede
 mobile/
   www/                 # PWA (HTML/CSS/JS, manifest, service worker, ícones)
-  android/             # projeto Android (Capacitor)
+  android/             # projeto Android híbrido (Capacitor)
   capacitor.config.json
   package.json
-.github/workflows/     # testes Python e build do APK
+native/
+  app/                 # app Android nativo (Kotlin + Compose)
+  gradle/              # wrapper e catálogo de versões
+.github/workflows/     # testes Python e builds dos APKs
 docs/
 ```
 
@@ -237,6 +238,7 @@ docs/
 
 ```bash
 python -m pytest server/tests -q
+cd native && ./gradlew :app:testDebugUnitTest
 ```
 
 Os testes cobrem memória, ferramentas, o laço de ferramentas do agente, o
