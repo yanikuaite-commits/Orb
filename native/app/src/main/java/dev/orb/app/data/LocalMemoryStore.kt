@@ -80,18 +80,21 @@ class LocalMemoryStore(
         val words = tokens(query)
         val entries = read().entries
         if (words.isEmpty()) return entries.take(limit)
-        entries.mapNotNull { entry ->
+        val scored = mutableListOf<Pair<Int, MemoryEntry>>()
+        for (entry in entries) {
             val haystack = "${entry.category} ${entry.key} ${entry.value}"
             val hay = tokens(haystack).toSet()
-            val score = words.sumOf { word ->
-                when {
+            var score = 0
+            for (word in words) {
+                score += when {
                     word in hay -> 3
                     haystack.lowercase().contains(word) -> 1
                     else -> 0
                 }
             }
-            if (score > 0) score to entry else null
-        }.sortedWith(
+            if (score > 0) scored += score to entry
+        }
+        scored.sortedWith(
             compareByDescending<Pair<Int, MemoryEntry>> { it.first }
                 .thenByDescending { it.second.updatedAt },
         ).take(limit).map { it.second }
