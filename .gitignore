@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Orb runtime data (memory, history, reminders, uploaded keys)
+server/data/
+server/config.json
+
+# Secrets
+.env
+.env.local
+
+# Node / Capacitor
+node_modules/
+mobile/ios/
+mobile/.gradle/
+mobile/build/
+
+# Android build outputs and generated web assets
+mobile/android/.gradle/
+mobile/android/build/
+mobile/android/app/build/
+mobile/android/local.properties
+mobile/android/app/src/main/assets/public/
+mobile/android/app/src/main/assets/capacitor.config.json
+mobile/android/app/src/main/assets/capacitor.plugins.json
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/
+*.log
+
+# Uploaded reference material (third-party, not redistributed)
+Mark-LVII-main*.zip
+
+# Native Android app
+native/.gradle/
+native/build/
+native/app/build/
+native/local.properties
+native/.idea/
+native/*.iml

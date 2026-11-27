@@ -1,0 +1,107 @@
+LICENÇA ORB 1.0
+==================
+
+Copyright (c) 2026 Yanikuaite
+
+Esta licença se aplica ao código-fonte, à documentação e aos demais arquivos
+deste repositório ("Software"), exceto pelos materiais de terceiros listados no
+arquivo NOTICE.
+
+Ao usar, copiar ou modificar o Software, você aceita os termos abaixo.
+
+1. CONCESSÃO DE DIREITOS
+
+É concedida permissão, gratuitamente, a qualquer pessoa que obtenha uma cópia
+deste Software, para usar, copiar, modificar, mesclar, publicar, distribuir,
+sublicenciar e/ou vender cópias do Software, e para permitir que pessoas a quem
+o Software seja fornecido façam o mesmo, para qualquer finalidade, sujeito às
+condições da seção 2.
+
+2. CONDIÇÕES
+
+2.1. O aviso de copyright acima e esta licença devem ser incluídos em todas as
+     cópias ou partes substanciais do Software.
+
+2.2. Arquivos modificados devem indicar claramente que foram alterados e a data
+     da alteração, sem sugerir que o autor original endossa a modificação.
+
+2.3. O arquivo NOTICE deve ser preservado em cópias e distribuições. Ele contém
+     o crédito de inspiração e a identificação dos materiais de terceiros.
+
+2.4. Se o Software for oferecido como serviço a terceiros, esta licença e o
+     aviso de copyright devem ficar acessíveis aos usuários do serviço.
+
+3. NOME E MARCA
+
+Esta licença não concede direitos sobre o nome "Orb", o logotipo ou a
+identidade visual do projeto. O nome identifica este software e não pode ser
+usado em versões derivadas de forma que sugira endosso, patrocínio ou origem
+oficial. Não há vínculo com empresas ou produtos homônimos.
+
+4. ISENÇÃO DE GARANTIAS
+
+O SOFTWARE É FORNECIDO "COMO ESTÁ", SEM GARANTIA DE QUALQUER TIPO, EXPRESSA OU
+IMPLÍCITA, INCLUINDO, MAS NÃO SE LIMITANDO A, GARANTIAS DE COMERCIALIZAÇÃO,
+ADEQUAÇÃO A UM PROPÓSITO ESPECÍFICO E NÃO VIOLAÇÃO. EM NENHUM CASO OS AUTORES OU
+DETENTORES DO COPYRIGHT SERÃO RESPONSÁVEIS POR QUALQUER RECLAMAÇÃO, DANO OU
+OUTRA RESPONSABILIDADE, SEJA EM AÇÃO DE CONTRATO, DELITO OU DE OUTRA FORMA,
+DECORRENTE DE, FORA DE OU EM CONEXÃO COM O SOFTWARE OU O USO OU OUTRAS
+NEGOCIAÇÕES NO SOFTWARE.
+
+5. LIMITAÇÃO DE RESPONSABILIDADE
+
+O Software conversa com serviços de terceiros (Google Gemini, Open-Meteo,
+DuckDuckGo). O uso desses serviços está sujeito aos termos e às cobranças dos
+respectivos provedores. O autor não responde por indisponibilidade, mudança de
+preço, bloqueio de conta ou alteração de API desses serviços.
+
+6. RELAÇÃO COM O JARVIS (MARK LVII)
+
+Este é um trabalho independente, inspirado em ideias e na arquitetura do projeto
+JARVIS (Mark LVII), de FatihMakes. Não há código-fonte copiado do JARVIS neste
+repositório; a implementação foi escrita de forma independente. O projeto JARVIS
+permanece sob a licença CC BY-NC 4.0 definida pelo autor original, e essa
+licença se aplica apenas ao projeto original e aos seus materiais. Nenhum
+arquivo do JARVIS é redistribuído neste repositório.
+
+7. VERSÃO EM INGLÊS
+
+O texto em português é a versão oficial desta licença. A tradução abaixo é
+apenas uma cortesia para leitores de outros idiomas e não cria direitos
+adicionais.
+
+--------------------------------------------------------------------------
+
+ORB LICENSE 1.0 (courtesy translation, non-binding)
+
+Copyright (c) 2026 Yanikuaite
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+1. The above copyright notice and this license shall be included in all copies
+   or substantial portions of the Software.
+2. Modified files must carry a clear notice that they were changed, without
+   implying endorsement by the original author.
+3. The NOTICE file must be preserved; it contains the inspiration credit and the
+   identification of third-party material.
+4. If the Software is offered as a service, this license and the copyright
+   notice must be accessible to the service's users.
+5. No rights are granted over the "Orb" name, logo or visual identity. The
+   name identifies this software and must not be used in a way that suggests
+   endorsement or official origin. There is no affiliation with homonymous
+   products or companies.
+6. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+7. This is an independent work inspired by JARVIS (Mark LVII) by FatihMakes. No
+   source code from JARVIS is included; the JARVIS project remains under CC
+   BY-NC 4.0 and that license applies only to the original project.

@@ -1,0 +1,11 @@
+{
+  "appId": "dev.orb.mobile",
+  "appName": "Orb",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": true
+  },
+  "ios": {
+    "contentInset": "always"
+  }
+}

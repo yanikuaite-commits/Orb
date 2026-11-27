@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Orb">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#1a0710"/>
+      <stop offset="70%" stop-color="#070a11"/>
+      <stop offset="100%" stop-color="#05060a"/>
+    </radialGradient>
+    <radialGradient id="core" cx="50%" cy="42%" r="55%">
+      <stop offset="0%" stop-color="#fff3f5"/>
+      <stop offset="18%" stop-color="#ff8a9c"/>
+      <stop offset="45%" stop-color="#ff2d4b"/>
+      <stop offset="78%" stop-color="#7d0a1c"/>
+      <stop offset="100%" stop-color="#1a0308"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="14" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g fill="none">
+    <circle cx="256" cy="256" r="186" stroke="#ff2d4b" stroke-opacity=".55" stroke-width="3"/>
+    <circle cx="256" cy="256" r="150" stroke="#9fd8ff" stroke-opacity=".45" stroke-width="2"/>
+    <circle cx="256" cy="256" r="118" stroke="#ff2d4b" stroke-opacity=".85" stroke-width="5"/>
+    <circle cx="256" cy="256" r="166" stroke="#ffffff" stroke-opacity=".28" stroke-width="2" stroke-dasharray="6 16"/>
+  </g>
+  <circle cx="256" cy="256" r="78" fill="url(#core)" filter="url(#glow)"/>
+  <circle cx="238" cy="234" r="18" fill="#ffffff" opacity=".85"/>
+</svg>

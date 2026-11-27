@@ -1,0 +1,11 @@
+services:
+  orb:
+    build: .
+    container_name: orb
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./server/data:/app/server/data
+    restart: unless-stopped
