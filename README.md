@@ -223,7 +223,7 @@ promete o impossível é pior do que nenhuma.
   "tts_engine": "browser",
   "persona": "",
   "model_ladder": ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.6-flash", "gemini-flash-latest"],
-  "smart_ladder": ["gemini-3.6-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
+  "smart_ladder": ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.1-flash-lite", "gemini-flash-latest"],
   "tts_model": "gemini-3.8-flash-lite-tts"
 }
 ```
@@ -296,10 +296,11 @@ para o Groq.
 - Na PWA, lembretes só notificam com o app aberto (sem push em segundo plano).
   No app Kotlin, os alarmes tocam com o app fechado via `AlarmManager`.
 - O modelo de texto padrão é `gemini-3.6-flash`; no Groq, `llama-3.3-70b-versatile`.
-  Os modelos 2.5 estão sendo desativados pelo Google; o app usa a família 3.x.
-  Há fallback automático se um modelo estiver indisponível. A lista fica em
-  `native/app/src/main/java/dev/orb/app/data/Providers.kt` e o campo em Ajustes
-  aceita qualquer nome de modelo.
+  Em teste com chave gratuita, `gemini-3.6-flash`, `gemini-3.5-flash`,
+  `gemini-3.5-flash-lite`, `gemini-3.1-flash-lite` e `gemini-2.5-flash`
+  responderam; o app prioriza a família 3.x e tem fallback automático.
+  A lista fica em `native/app/src/main/java/dev/orb/app/data/Providers.kt` e o
+  campo em Ajustes aceita qualquer nome de modelo.
 
 ## Licença e créditos
 

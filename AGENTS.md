@@ -61,11 +61,13 @@ relative imports.
   voice/live) and optionally a Groq key (text); both are encrypted on device.
 - **Two keys only.** Gemini is mandatory for voice/live and text; Groq is optional
   and text-only. Do not add a third provider or a server URL to the Kotlin app.
-- **Use current Gemini model IDs.** `gemini-3.5-flash` does not exist (only
-  `gemini-3.5-flash-lite`). The default is `gemini-3.6-flash`; fallbacks are
-  `gemini-3.5-flash-lite`, `gemini-3.8-flash`, `gemini-3.1-flash-lite`, and
-  `gemini-flash-latest`. The 2.5 models are deprecated/limited to old keys.
-  Check https://ai.google.dev/gemini-api/docs/models before changing them.
+- **Verify Gemini model IDs against the live key.** A docs page can lag the
+  API: a real free key listed `gemini-3.5-flash` and it answered 200, even
+  though the models page only showed `gemini-3.5-flash-lite`. The default is
+  `gemini-3.6-flash`; `gemini-3.5-flash`, `gemini-3.5-flash-lite`,
+  `gemini-3.8-flash`, `gemini-3.1-flash-lite` and `gemini-flash-latest` are
+  fallbacks. Check `GET /v1beta/models` plus a real `generateContent` before
+  removing a model.
 
 ## Style
 

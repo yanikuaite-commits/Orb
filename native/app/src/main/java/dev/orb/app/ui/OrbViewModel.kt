@@ -101,7 +101,6 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
                 saved.textModel.isBlank() ->
                     if (provider == "groq") DEFAULT_GROQ_TEXT_MODEL else DEFAULT_GEMINI_TEXT_MODEL
                 provider == "groq" && saved.textModel.startsWith("gemini") -> DEFAULT_GROQ_TEXT_MODEL
-                provider == "gemini" && saved.textModel == "gemini-3.5-flash" -> DEFAULT_GEMINI_TEXT_MODEL
                 else -> saved.textModel.trim()
             }
             val messages = withContext(Dispatchers.IO) {
