@@ -79,12 +79,13 @@ private class GeminiConversation(
     }
 
     private suspend fun call(): LlmTurn {
+        val toolList = declarations.takeIf { it.isNotEmpty() }?.let { listOf(GeminiTool(functionDeclarations = it)) }
         val request = GeminiRequest(
             contents = contents.toList(),
-            tools = declarations.takeIf { it.isNotEmpty() }?.let { listOf(GeminiTool(functionDeclarations = it)) },
+            tools = toolList,
             systemInstruction = GeminiContent(parts = listOf(GeminiPart(text = system))),
             generationConfig = GeminiGenerationConfig(temperature = 0.7),
-            toolConfig = GeminiToolConfig(GeminiFunctionCallingConfig("AUTO")),
+            toolConfig = if (toolList != null) GeminiToolConfig(GeminiFunctionCallingConfig("AUTO")) else null,
         )
         val response = gemini.generate(model, request)
         val calls = response.functionCalls()

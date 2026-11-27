@@ -20,21 +20,18 @@ MOBILE_DIR = Path(os.environ.get("ORB_MOBILE_DIR", BASE_DIR.parent / "mobile" / 
 
 DEFAULT_LADDER = [
     "gemini-3.5-flash-lite",
-    "gemini-flash-lite-latest",
     "gemini-3.1-flash-lite",
-    "gemini-3.5-flash",
+    "gemini-3.6-flash",
     "gemini-flash-latest",
-    "gemini-2.5-flash-lite",
-    "gemini-2.5-flash",
 ]
 DEFAULT_SMART_LADDER = [
-    "gemini-3.5-flash",
-    "gemini-3.8-flash",
-    "gemini-flash-latest",
+    "gemini-3.6-flash",
     "gemini-3.5-flash-lite",
-    "gemini-2.5-flash",
+    "gemini-3.8-flash",
+    "gemini-3.1-flash-lite",
+    "gemini-flash-latest",
 ]
-DEFAULT_TTS_MODEL = "gemini-2.5-flash-preview-tts"
+DEFAULT_TTS_MODEL = "gemini-3.8-flash-lite-tts"
 DEFAULT_VOICES = ["Charon", "Kore", "Puck", "Fenrir", "Aoede", "Orus"]
 
 DEFAULTS: dict[str, Any] = {

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.orb.app.AppContainer
+import dev.orb.app.agent.LlmTurn
 import dev.orb.app.data.DEFAULT_GEMINI_TEXT_MODEL
 import dev.orb.app.data.DEFAULT_GROQ_TEXT_MODEL
 import dev.orb.app.data.GeminiException
@@ -100,6 +101,7 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
                 saved.textModel.isBlank() ->
                     if (provider == "groq") DEFAULT_GROQ_TEXT_MODEL else DEFAULT_GEMINI_TEXT_MODEL
                 provider == "groq" && saved.textModel.startsWith("gemini") -> DEFAULT_GROQ_TEXT_MODEL
+                provider == "gemini" && saved.textModel == "gemini-3.5-flash" -> DEFAULT_GEMINI_TEXT_MODEL
                 else -> saved.textModel.trim()
             }
             val messages = withContext(Dispatchers.IO) {
@@ -389,6 +391,56 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
                 )
             }
         }
+    }
+
+    fun testModel() {
+        val state = _state.value
+        if (!state.apiKeySet) {
+            notify("Salve a chave Gemini primeiro.")
+            return
+        }
+        if (state.textProvider == "groq" && !state.groqKeySet) {
+            notify("Salve a chave Groq primeiro.")
+            return
+        }
+        viewModelScope.launch {
+            _state.update { it.copy(busy = true) }
+            val client = if (state.textProvider == "groq") container.groqText else container.geminiText
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    client.conversation(
+                        system = "Responda apenas OK.",
+                        history = emptyList(),
+                        tools = emptyList(),
+                        model = state.textModel,
+                    ).send("Teste de conexão. Responda apenas OK.")
+                }
+            }
+            val message = result.fold(
+                onSuccess = { turn ->
+                    when (turn) {
+                        is LlmTurn.Reply -> "Modelo OK: ${turn.text.take(80)}"
+                        is LlmTurn.Tools -> "Modelo OK (chamou ferramenta)."
+                    }
+                },
+                onFailure = { error -> "Falha no modelo: ${failureDetail(error)}" },
+            )
+            _state.update { it.copy(busy = false, snackbar = message) }
+        }
+    }
+
+    private fun failureDetail(error: Throwable): String = when (error) {
+        is GeminiException -> when (error.code) {
+            404 -> "Gemini HTTP 404, modelo não encontrado"
+            429 -> "Gemini HTTP 429, cota"
+            else -> "Gemini HTTP ${error.code}"
+        }
+        is GroqException -> when (error.code) {
+            404 -> "Groq HTTP 404, modelo não encontrado"
+            429 -> "Groq HTTP 429, cota"
+            else -> "Groq HTTP ${error.code}"
+        }
+        else -> error.message?.take(140) ?: error.javaClass.simpleName
     }
 
     fun removeGeminiKey() {

@@ -70,6 +70,7 @@ fun SettingsScreen(
     onSave: (SettingsDraft) -> Unit,
     onRemoveGeminiKey: () -> Unit,
     onRemoveGroqKey: () -> Unit,
+    onTest: () -> Unit,
     onBack: () -> Unit,
 ) {
     var assistant by remember(state.assistantName) { mutableStateOf(state.assistantName) }
@@ -139,6 +140,9 @@ fun SettingsScreen(
                 color = OrbMuted,
                 fontSize = 11.sp,
             )
+            TextButton(onClick = onTest, enabled = !state.busy) {
+                Text("Testar modelo salvo", color = OrbRed, fontSize = 12.sp)
+            }
 
             SectionTitle("Chaves")
             KeyStatus(configured = state.apiKeySet, label = "Gemini")
@@ -294,7 +298,7 @@ fun SettingsScreen(
             }
             Spacer(Modifier.height(12.dp))
             Text(
-                text = "Orb 2.1 · Licença Orb 1.0",
+                text = "Orb 2.1.1 · Licença Orb 1.0",
                 color = OrbMuted,
                 fontSize = 11.sp,
                 modifier = Modifier.fillMaxWidth(),

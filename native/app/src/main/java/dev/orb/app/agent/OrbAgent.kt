@@ -71,7 +71,7 @@ class OrbAgent(
                 reply = if (keyError) {
                     "Sua chave da ${client.label} foi recusada. Confira a chave em Ajustes."
                 } else {
-                    "Não consegui falar com o modelo agora. Pode ser cota, modelo indisponível ou falta de conexão. Tente de novo em alguns instantes."
+                    "Não consegui falar com o modelo agora (${failureDetail(error)}). Pode ser cota, modelo indisponível ou falta de conexão. Tente de novo em alguns instantes."
                 },
                 tools = trace,
                 ok = false,
@@ -85,6 +85,20 @@ class OrbAgent(
         history.append("user", message)
         history.append("assistant", reply)
         return AgentResult(reply = reply, tools = trace)
+    }
+
+    private fun failureDetail(error: Exception): String = when (error) {
+        is GeminiException -> when (error.code) {
+            404 -> "Gemini HTTP 404, modelo não encontrado"
+            429 -> "Gemini HTTP 429, cota"
+            else -> "Gemini HTTP ${error.code}"
+        }
+        is GroqException -> when (error.code) {
+            404 -> "Groq HTTP 404, modelo não encontrado"
+            429 -> "Groq HTTP 429, cota"
+            else -> "Groq HTTP ${error.code}"
+        }
+        else -> error.message?.take(120) ?: error.javaClass.simpleName
     }
 
     private fun systemPrompt(): String {

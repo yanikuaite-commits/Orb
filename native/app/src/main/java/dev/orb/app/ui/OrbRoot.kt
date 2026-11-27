@@ -147,6 +147,7 @@ fun OrbRoot(container: AppContainer) {
                     onSave = vm::saveSettings,
                     onRemoveGeminiKey = vm::removeGeminiKey,
                     onRemoveGroqKey = vm::removeGroqKey,
+                    onTest = vm::testModel,
                     onBack = { nav.popBackStack() },
                 )
             }

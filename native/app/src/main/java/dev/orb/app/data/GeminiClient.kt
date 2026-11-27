@@ -239,7 +239,12 @@ class GeminiClient(
             ),
         )
         return try {
-            val response = generate(TTS_MODEL, key(), request)
+            var generated: GeminiResponse? = null
+            for (model in TTS_MODELS) {
+                generated = runCatching { generate(model, key(), request) }.getOrNull()
+                if (generated != null) break
+            }
+            val response = generated ?: return null
             val inline = response.candidates.firstOrNull()?.content?.parts
                 ?.firstOrNull { it.inlineData?.data != null }
                 ?.inlineData
@@ -294,19 +299,24 @@ class GeminiClient(
 
     private companion object {
         const val BASE = "https://generativelanguage.googleapis.com/v1beta"
-        const val TTS_MODEL = "gemini-2.5-flash-preview-tts"
+        val TTS_MODELS = listOf(
+            "gemini-3.8-flash-lite-tts",
+            "gemini-3.8-flash-tts",
+            "gemini-2.5-flash-preview-tts",
+        )
         const val COOLDOWN_MS = 300_000L
         val FAST_LADDER = listOf(
             "gemini-3.5-flash-lite",
-            "gemini-flash-lite-latest",
-            "gemini-2.5-flash-lite",
-            "gemini-2.5-flash",
+            "gemini-3.1-flash-lite",
+            "gemini-3.6-flash",
+            "gemini-flash-latest",
         )
         val SMART_LADDER = listOf(
-            "gemini-3.5-flash",
+            "gemini-3.6-flash",
+            "gemini-3.5-flash-lite",
+            "gemini-3.8-flash",
+            "gemini-3.1-flash-lite",
             "gemini-flash-latest",
-            "gemini-2.5-flash",
-            "gemini-2.5-flash-lite",
         )
         val cooldowns = mutableMapOf<String, Long>()
     }

@@ -316,8 +316,10 @@ class OrbTools(
             putJsonObject("properties") {
                 props.forEach { (name, value) -> put(name, value) }
             }
-            putJsonArray("required") {
-                required.forEach { add(it) }
+            if (required.isNotEmpty()) {
+                putJsonArray("required") {
+                    required.forEach { add(it) }
+                }
             }
         }
 
