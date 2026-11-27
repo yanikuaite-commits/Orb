@@ -20,6 +20,8 @@ data class OrbSettings(
     val persona: String = "",
     val voice: String = "Charon",
     val ttsEngine: String = "device",
+    val textProvider: String = "gemini",
+    val textModel: String = DEFAULT_GEMINI_TEXT_MODEL,
 )
 
 class SettingsStore(private val context: Context, scope: CoroutineScope) {
@@ -31,6 +33,8 @@ class SettingsStore(private val context: Context, scope: CoroutineScope) {
         val persona = stringPreferencesKey("persona")
         val voice = stringPreferencesKey("voice")
         val ttsEngine = stringPreferencesKey("tts_engine")
+        val textProvider = stringPreferencesKey("text_provider")
+        val textModel = stringPreferencesKey("text_model")
     }
 
     @Volatile
@@ -45,6 +49,8 @@ class SettingsStore(private val context: Context, scope: CoroutineScope) {
             persona = prefs[Keys.persona].orEmpty(),
             voice = prefs[Keys.voice] ?: "Charon",
             ttsEngine = prefs[Keys.ttsEngine] ?: "device",
+            textProvider = prefs[Keys.textProvider] ?: "gemini",
+            textModel = prefs[Keys.textModel] ?: DEFAULT_GEMINI_TEXT_MODEL,
         )
     }
 
@@ -62,6 +68,8 @@ class SettingsStore(private val context: Context, scope: CoroutineScope) {
             prefs[Keys.persona] = settings.persona
             prefs[Keys.voice] = settings.voice
             prefs[Keys.ttsEngine] = settings.ttsEngine
+            prefs[Keys.textProvider] = settings.textProvider
+            prefs[Keys.textModel] = settings.textModel
         }
     }
 }

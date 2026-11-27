@@ -22,19 +22,32 @@ class ApiKeyStore(context: Context) {
         context.applicationContext.getSharedPreferences("orb_secrets_fallback", Context.MODE_PRIVATE)
     }
 
-    fun get(): String = prefs.getString(KEY, "").orEmpty().trim()
+    fun gemini(): String = prefs.getString(GEMINI_KEY, "").orEmpty().trim()
 
-    fun set(value: String) {
-        prefs.edit().putString(KEY, value.trim()).apply()
+    fun setGemini(value: String) {
+        prefs.edit().putString(GEMINI_KEY, value.trim()).apply()
     }
 
-    fun clear() {
-        prefs.edit().remove(KEY).apply()
+    fun clearGemini() {
+        prefs.edit().remove(GEMINI_KEY).apply()
     }
 
-    fun hasKey(): Boolean = get().isNotBlank()
+    fun hasGemini(): Boolean = gemini().isNotBlank()
+
+    fun groq(): String = prefs.getString(GROQ_KEY, "").orEmpty().trim()
+
+    fun setGroq(value: String) {
+        prefs.edit().putString(GROQ_KEY, value.trim()).apply()
+    }
+
+    fun clearGroq() {
+        prefs.edit().remove(GROQ_KEY).apply()
+    }
+
+    fun hasGroq(): Boolean = groq().isNotBlank()
 
     private companion object {
-        const val KEY = "gemini_api_key"
+        const val GEMINI_KEY = "gemini_api_key"
+        const val GROQ_KEY = "groq_api_key"
     }
 }

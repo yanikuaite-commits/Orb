@@ -145,7 +145,8 @@ fun OrbRoot(container: AppContainer) {
                 SettingsScreen(
                     state = state,
                     onSave = vm::saveSettings,
-                    onRemoveKey = vm::removeApiKey,
+                    onRemoveGeminiKey = vm::removeGeminiKey,
+                    onRemoveGroqKey = vm::removeGroqKey,
                     onBack = { nav.popBackStack() },
                 )
             }

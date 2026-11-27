@@ -4,7 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.orb.app.AppContainer
+import dev.orb.app.data.DEFAULT_GEMINI_TEXT_MODEL
+import dev.orb.app.data.DEFAULT_GROQ_TEXT_MODEL
 import dev.orb.app.data.GeminiException
+import dev.orb.app.data.GroqException
 import dev.orb.app.data.MemoryEntry
 import dev.orb.app.data.ORB_VOICES
 import dev.orb.app.data.Reminder
@@ -19,7 +22,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
-enum class OrbStatus { Ready, MissingKey }
+enum class OrbStatus { Ready, MissingKey, MissingGroqKey }
+
+data class SettingsDraft(
+    val assistantName: String,
+    val userName: String,
+    val language: String,
+    val persona: String,
+    val ttsEngine: String,
+    val voice: String,
+    val textProvider: String,
+    val textModel: String,
+    val geminiKey: String,
+    val groqKey: String,
+)
 
 data class UiMessage(
     val id: String = UUID.randomUUID().toString(),
@@ -33,6 +49,9 @@ data class OrbState(
     val ready: Boolean = false,
     val setupRequired: Boolean = false,
     val apiKeySet: Boolean = false,
+    val groqKeySet: Boolean = false,
+    val textProvider: String = "gemini",
+    val textModel: String = DEFAULT_GEMINI_TEXT_MODEL,
     val assistantName: String = "Orb",
     val userName: String = "",
     val language: String = "pt-BR",
@@ -51,7 +70,11 @@ data class OrbState(
     val exactAlarms: Boolean = true,
     val snackbar: String? = null,
 ) {
-    val status: OrbStatus get() = if (apiKeySet) OrbStatus.Ready else OrbStatus.MissingKey
+    val status: OrbStatus get() = when {
+        !apiKeySet -> OrbStatus.MissingKey
+        textProvider == "groq" && !groqKeySet -> OrbStatus.MissingGroqKey
+        else -> OrbStatus.Ready
+    }
 }
 
 class OrbViewModel(private val container: AppContainer) : ViewModel() {
@@ -70,7 +93,8 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             val saved = settingsStore.flow.first()
             settingsStore.current = saved
-            val hasKey = apiKeys.hasKey()
+            val hasGemini = apiKeys.hasGemini()
+            val hasGroq = apiKeys.hasGroq()
             val messages = withContext(Dispatchers.IO) {
                 history.messages(40).map { message ->
                     UiMessage(
@@ -83,8 +107,11 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
             _state.update {
                 it.copy(
                     ready = true,
-                    setupRequired = !hasKey,
-                    apiKeySet = hasKey,
+                    setupRequired = !hasGemini,
+                    apiKeySet = hasGemini,
+                    groqKeySet = hasGroq,
+                    textProvider = saved.textProvider,
+                    textModel = saved.textModel,
                     assistantName = saved.assistantName,
                     userName = saved.userName,
                     language = saved.language,
@@ -100,40 +127,56 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    fun activate(key: String, userName: String) {
-        val trimmed = key.trim()
-        if (trimmed.isBlank()) {
-            notify("Cole sua chave Gemini para ativar o Orb.")
+    fun activate(geminiKey: String, groqKey: String, userName: String) {
+        val geminiTrimmed = geminiKey.trim()
+        val groqTrimmed = groqKey.trim()
+        if (geminiTrimmed.isBlank()) {
+            notify("A chave Gemini é obrigatória para voz e live.")
             return
         }
         viewModelScope.launch {
             _state.update { it.copy(busy = true) }
-            val result = withContext(Dispatchers.IO) { container.gemini.validateKey(trimmed) }
-            if (result.isSuccess) {
-                apiKeys.set(trimmed)
-                val saved = settingsStore.current.copy(
-                    userName = userName.trim().ifBlank { settingsStore.current.userName },
-                )
-                settingsStore.save(saved)
-                _state.update {
-                    it.copy(
-                        busy = false,
-                        apiKeySet = true,
-                        setupRequired = false,
-                        userName = saved.userName,
-                        snackbar = null,
-                    )
-                }
-                loadRemindersInternal()
-            } else {
-                val error = result.exceptionOrNull()
+            val geminiResult = withContext(Dispatchers.IO) { container.gemini.validateKey(geminiTrimmed) }
+            if (geminiResult.isFailure) {
+                val error = geminiResult.exceptionOrNull()
                 val message = if (error is GeminiException && error.isKey) {
-                    "Chave recusada. Confira se copiou a chave do Google AI Studio."
+                    "Chave Gemini recusada. Confira no Google AI Studio."
                 } else {
-                    "Não consegui validar a chave agora. Verifique a internet e tente de novo."
+                    "Não consegui validar a chave Gemini agora. Verifique a internet."
                 }
                 _state.update { it.copy(busy = false, snackbar = message) }
+                return@launch
             }
+            if (groqTrimmed.isNotBlank()) {
+                val groqResult = withContext(Dispatchers.IO) { container.groq.validateKey(groqTrimmed) }
+                if (groqResult.isFailure) {
+                    val error = groqResult.exceptionOrNull()
+                    val message = if (error is GroqException && error.isKey) {
+                        "Chave Groq recusada. Confira em console.groq.com/keys."
+                    } else {
+                        "Não consegui validar a chave Groq agora. Verifique a internet."
+                    }
+                    _state.update { it.copy(busy = false, snackbar = message) }
+                    return@launch
+                }
+                apiKeys.setGroq(groqTrimmed)
+            }
+            apiKeys.setGemini(geminiTrimmed)
+            val saved = settingsStore.current.copy(
+                userName = userName.trim().ifBlank { settingsStore.current.userName },
+            )
+            settingsStore.save(saved)
+            _state.update {
+                it.copy(
+                    busy = false,
+                    apiKeySet = true,
+                    groqKeySet = apiKeys.hasGroq(),
+                    setupRequired = false,
+                    userName = saved.userName,
+                    snackbar = null,
+                )
+            }
+            loadRemindersInternal()
         }
     }
 
@@ -141,7 +184,12 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
         val message = text.trim()
         if (message.isBlank() || _state.value.busy) return
         if (!_state.value.apiKeySet) {
-            notify("Ative o Orb com sua chave Gemini em Ajustes.")
+            notify("Ative o Orb com a chave Gemini em Ajustes.")
+            return
+        }
+        val provider = _state.value.textProvider
+        if (provider == "groq" && !_state.value.groqKeySet) {
+            notify("Adicione a chave Groq em Ajustes para usar modelos Groq.")
             return
         }
         _state.update {
@@ -153,7 +201,10 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
         }
         viewModelScope.launch {
             try {
-                val result = withContext(Dispatchers.IO) { agent.chat(message) }
+                val client = if (provider == "groq") container.groqText else container.geminiText
+                val result = withContext(Dispatchers.IO) {
+                    agent.chat(message, client, _state.value.textModel)
+                }
                 _state.update {
                     it.copy(
                         messages = it.messages + UiMessage(
@@ -253,39 +304,64 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
         _state.update { it.copy(memory = entries) }
     }
 
-    fun saveSettings(
-        assistantName: String,
-        userName: String,
-        language: String,
-        persona: String,
-        ttsEngine: String,
-        voice: String,
-        apiKey: String,
-    ) {
+    fun saveSettings(draft: SettingsDraft) {
         viewModelScope.launch {
             _state.update { it.copy(busy = true) }
-            val trimmedKey = apiKey.trim()
-            if (trimmedKey.isNotBlank()) {
-                val result = withContext(Dispatchers.IO) { container.gemini.validateKey(trimmedKey) }
+            val provider = if (draft.textProvider == "groq") "groq" else "gemini"
+            val geminiKey = draft.geminiKey.trim()
+            val groqKey = draft.groqKey.trim()
+
+            if (geminiKey.isNotBlank()) {
+                val result = withContext(Dispatchers.IO) { container.gemini.validateKey(geminiKey) }
                 if (result.isFailure) {
                     val error = result.exceptionOrNull()
                     val message = if (error is GeminiException && error.isKey) {
-                        "Chave recusada. Confira a chave do Google AI Studio."
+                        "Chave Gemini recusada. Confira no Google AI Studio."
                     } else {
-                        "Não consegui validar a chave agora. Verifique a internet."
+                        "Não consegui validar a chave Gemini agora. Verifique a internet."
                     }
                     _state.update { it.copy(busy = false, snackbar = message) }
                     return@launch
                 }
-                apiKeys.set(trimmedKey)
+                apiKeys.setGemini(geminiKey)
+            } else if (!apiKeys.hasGemini()) {
+                _state.update {
+                    it.copy(busy = false, snackbar = "A chave Gemini é obrigatória para voz e live.")
+                }
+                return@launch
             }
+
+            if (groqKey.isNotBlank()) {
+                val result = withContext(Dispatchers.IO) { container.groq.validateKey(groqKey) }
+                if (result.isFailure) {
+                    val error = result.exceptionOrNull()
+                    val message = if (error is GroqException && error.isKey) {
+                        "Chave Groq recusada. Confira em console.groq.com/keys."
+                    } else {
+                        "Não consegui validar a chave Groq agora. Verifique a internet."
+                    }
+                    _state.update { it.copy(busy = false, snackbar = message) }
+                    return@launch
+                }
+                apiKeys.setGroq(groqKey)
+            }
+            if (provider == "groq" && !apiKeys.hasGroq()) {
+                _state.update {
+                    it.copy(busy = false, snackbar = "Adicione a chave Groq para usar modelos Groq.")
+                }
+                return@launch
+            }
+
+            val defaultModel = if (provider == "groq") DEFAULT_GROQ_TEXT_MODEL else DEFAULT_GEMINI_TEXT_MODEL
             val saved = settingsStore.current.copy(
-                assistantName = assistantName.trim().ifBlank { "Orb" },
-                userName = userName.trim(),
-                language = language.trim().ifBlank { "pt-BR" },
-                persona = persona.trim(),
-                ttsEngine = if (ttsEngine == "gemini") "gemini" else "device",
-                voice = voice,
+                assistantName = draft.assistantName.trim().ifBlank { "Orb" },
+                userName = draft.userName.trim(),
+                language = draft.language.trim().ifBlank { "pt-BR" },
+                persona = draft.persona.trim(),
+                ttsEngine = if (draft.ttsEngine == "gemini") "gemini" else "device",
+                voice = draft.voice,
+                textProvider = provider,
+                textModel = draft.textModel.trim().ifBlank { defaultModel },
             )
             settingsStore.save(saved)
             _state.update {
@@ -296,8 +372,11 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
                     persona = saved.persona,
                     ttsEngine = saved.ttsEngine,
                     voice = saved.voice,
-                    apiKeySet = apiKeys.hasKey(),
-                    setupRequired = !apiKeys.hasKey(),
+                    textProvider = saved.textProvider,
+                    textModel = saved.textModel,
+                    apiKeySet = apiKeys.hasGemini(),
+                    groqKeySet = apiKeys.hasGroq(),
+                    setupRequired = !apiKeys.hasGemini(),
                     busy = false,
                     snackbar = "Ajustes salvos.",
                 )
@@ -305,9 +384,14 @@ class OrbViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    fun removeApiKey() {
-        apiKeys.clear()
+    fun removeGeminiKey() {
+        apiKeys.clearGemini()
         _state.update { it.copy(apiKeySet = false, setupRequired = true, snackbar = null) }
+    }
+
+    fun removeGroqKey() {
+        apiKeys.clearGroq()
+        _state.update { it.copy(groqKeySet = false, snackbar = "Chave Groq removida.") }
     }
 
     private fun speak(text: String) {

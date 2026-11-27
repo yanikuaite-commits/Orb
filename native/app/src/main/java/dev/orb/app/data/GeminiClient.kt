@@ -154,9 +154,9 @@ class GeminiClient(
     private val http: HttpClient,
     private val keys: ApiKeyStore,
 ) {
-    fun hasKey(): Boolean = keys.hasKey()
+    fun hasKey(): Boolean = keys.hasGemini()
 
-    fun key(): String = keys.get()
+    fun key(): String = keys.gemini()
 
     suspend fun validateKey(key: String): Result<Unit> {
         val trimmed = key.trim()
@@ -175,11 +175,19 @@ class GeminiClient(
         }
     }
 
-    suspend fun generate(tier: Tier, request: GeminiRequest): GeminiResponse {
+    suspend fun generate(tier: Tier, request: GeminiRequest): GeminiResponse = generate(ladder(tier), request)
+
+    suspend fun generate(model: String, request: GeminiRequest): GeminiResponse {
+        val requested = model.trim().removePrefix("models/")
+        val preferred = if (requested.isBlank()) emptyList() else listOf(requested)
+        return generate((preferred + ladder(Tier.Smart)).distinct(), request)
+    }
+
+    private suspend fun generate(models: List<String>, request: GeminiRequest): GeminiResponse {
         val apiKey = key()
         if (apiKey.isBlank()) throw GeminiException(401, "missing api key")
         var last: GeminiException? = null
-        for (model in ladder(tier)) {
+        for (model in models) {
             if (isCooling(model)) continue
             try {
                 return generate(model, apiKey, request)

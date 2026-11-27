@@ -50,7 +50,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.orb.app.data.DEFAULT_GEMINI_TEXT_MODEL
+import dev.orb.app.data.DEFAULT_GROQ_TEXT_MODEL
+import dev.orb.app.data.GEMINI_TEXT_MODELS
+import dev.orb.app.data.GROQ_TEXT_MODELS
 import dev.orb.app.ui.OrbState
+import dev.orb.app.ui.SettingsDraft
 import dev.orb.app.ui.theme.OrbBg
 import dev.orb.app.ui.theme.OrbLine
 import dev.orb.app.ui.theme.OrbMuted
@@ -62,8 +67,9 @@ import dev.orb.app.ui.theme.OrbText
 @Composable
 fun SettingsScreen(
     state: OrbState,
-    onSave: (String, String, String, String, String, String, String) -> Unit,
-    onRemoveKey: () -> Unit,
+    onSave: (SettingsDraft) -> Unit,
+    onRemoveGeminiKey: () -> Unit,
+    onRemoveGroqKey: () -> Unit,
     onBack: () -> Unit,
 ) {
     var assistant by remember(state.assistantName) { mutableStateOf(state.assistantName) }
@@ -72,8 +78,14 @@ fun SettingsScreen(
     var persona by remember(state.persona) { mutableStateOf(state.persona) }
     var ttsEngine by remember(state.ttsEngine) { mutableStateOf(state.ttsEngine) }
     var voice by remember(state.voice) { mutableStateOf(state.voice) }
-    var apiKey by remember { mutableStateOf("") }
-    var confirmRemove by remember { mutableStateOf(false) }
+    var provider by remember(state.textProvider) { mutableStateOf(state.textProvider) }
+    var model by remember(state.textModel) { mutableStateOf(state.textModel) }
+    var geminiKey by remember { mutableStateOf("") }
+    var groqKey by remember { mutableStateOf("") }
+    var confirmRemoveGemini by remember { mutableStateOf(false) }
+    var confirmRemoveGroq by remember { mutableStateOf(false) }
+
+    val models = if (provider == "groq") GROQ_TEXT_MODELS else GEMINI_TEXT_MODELS
 
     Column(Modifier.fillMaxSize().background(OrbBg)) {
         Row(
@@ -91,35 +103,51 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
         ) {
-            SectionTitle("Chave Gemini")
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = OrbPanel,
-                border = BorderStroke(1.dp, OrbLine),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.Key,
-                        contentDescription = null,
-                        tint = if (state.apiKeySet) Color(0xFF35D07F) else OrbMuted,
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = if (state.apiKeySet) "Chave configurada no aparelho" else "Sem chave",
-                        color = OrbText,
-                        fontSize = 12.sp,
-                    )
-                }
+            SectionTitle("Modelo de texto")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = provider == "gemini",
+                    onClick = {
+                        provider = "gemini"
+                        if (model !in GEMINI_TEXT_MODELS) model = DEFAULT_GEMINI_TEXT_MODEL
+                    },
+                    label = { Text("Gemini") },
+                )
+                FilterChip(
+                    selected = provider == "groq",
+                    onClick = {
+                        provider = "groq"
+                        if (model !in GROQ_TEXT_MODELS) model = DEFAULT_GROQ_TEXT_MODEL
+                    },
+                    label = { Text("Groq") },
+                )
             }
-            Spacer(Modifier.height(10.dp))
-            OutlinedTextField(
-                value = apiKey,
-                onValueChange = { apiKey = it },
-                label = { Text("Nova chave (opcional)") },
-                placeholder = {
-                    Text(if (state.apiKeySet) "deixe em branco para manter" else "AIza…")
+            Spacer(Modifier.height(8.dp))
+            ModelPicker(
+                models = models,
+                selected = model,
+                label = "Modelo",
+                onSelect = { model = it },
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = if (provider == "groq") {
+                    "Groq responde só por texto. A voz e o live continuam no Gemini ou no TTS do aparelho."
+                } else {
+                    "Gemini responde texto, voz e live."
                 },
+                color = OrbMuted,
+                fontSize = 11.sp,
+            )
+
+            SectionTitle("Chaves")
+            KeyStatus(configured = state.apiKeySet, label = "Gemini")
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                value = geminiKey,
+                onValueChange = { geminiKey = it },
+                label = { Text("Nova chave Gemini (opcional)") },
+                placeholder = { Text(if (state.apiKeySet) "deixe em branco para manter" else "AIza…") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
@@ -129,13 +157,40 @@ fun SettingsScreen(
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "A chave fica criptografada no celular e é enviada só para o Google. Se você compartilhar o APK, cada pessoa usa a própria chave.",
+                text = "Obrigatória para voz e live. Fica criptografada no aparelho e é enviada só para o Google.",
                 color = OrbMuted,
                 fontSize = 11.sp,
             )
             if (state.apiKeySet) {
-                TextButton(onClick = { confirmRemove = true }) {
-                    Text("Remover chave do aparelho", color = OrbRed, fontSize = 12.sp)
+                TextButton(onClick = { confirmRemoveGemini = true }) {
+                    Text("Remover chave Gemini", color = OrbRed, fontSize = 12.sp)
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+            KeyStatus(configured = state.groqKeySet, label = "Groq")
+            Spacer(Modifier.height(8.dp))
+            OutlinedTextField(
+                value = groqKey,
+                onValueChange = { groqKey = it },
+                label = { Text("Chave Groq (opcional)") },
+                placeholder = { Text(if (state.groqKeySet) "deixe em branco para manter" else "gsk_…") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                colors = orbFieldColors(),
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "Só para texto. Obtenha em console.groq.com/keys. Também fica criptografada no aparelho.",
+                color = OrbMuted,
+                fontSize = 11.sp,
+            )
+            if (state.groqKeySet) {
+                TextButton(onClick = { confirmRemoveGroq = true }) {
+                    Text("Remover chave Groq", color = OrbRed, fontSize = 12.sp)
                 }
             }
 
@@ -195,7 +250,7 @@ fun SettingsScreen(
             }
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "A voz do aparelho funciona offline. A voz Gemini é gerada direto pelo Google.",
+                text = "A voz do aparelho funciona offline. A voz Gemini é gerada direto pelo Google e exige a chave Gemini.",
                 color = OrbMuted,
                 fontSize = 11.sp,
             )
@@ -207,7 +262,20 @@ fun SettingsScreen(
             Spacer(Modifier.height(22.dp))
             Button(
                 onClick = {
-                    onSave(assistant, user, language, persona, ttsEngine, voice, apiKey)
+                    onSave(
+                        SettingsDraft(
+                            assistantName = assistant,
+                            userName = user,
+                            language = language,
+                            persona = persona,
+                            ttsEngine = ttsEngine,
+                            voice = voice,
+                            textProvider = provider,
+                            textModel = model,
+                            geminiKey = geminiKey,
+                            groqKey = groqKey,
+                        ),
+                    )
                 },
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
@@ -226,7 +294,7 @@ fun SettingsScreen(
             }
             Spacer(Modifier.height(12.dp))
             Text(
-                text = "Orb 2.0 · Licença Orb 1.0",
+                text = "Orb 2.1 · Licença Orb 1.0",
                 color = OrbMuted,
                 fontSize = 11.sp,
                 modifier = Modifier.fillMaxWidth(),
@@ -236,27 +304,74 @@ fun SettingsScreen(
         }
     }
 
-    if (confirmRemove) {
+    if (confirmRemoveGemini) {
         AlertDialog(
-            onDismissRequest = { confirmRemove = false },
+            onDismissRequest = { confirmRemoveGemini = false },
             title = { Text("Remover a chave Gemini?") },
             text = {
-                Text("O Orb para de responder até você colar uma chave nova. Memória, histórico e lembretes continuam no aparelho.")
+                Text("O Orb para de responder e de falar até você colar uma chave nova. A chave Gemini também é usada para voz e live.")
             },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        confirmRemove = false
-                        apiKey = ""
-                        onRemoveKey()
+                        confirmRemoveGemini = false
+                        geminiKey = ""
+                        onRemoveGeminiKey()
                     },
                 ) { Text("Remover", color = OrbRed) }
             },
             dismissButton = {
-                TextButton(onClick = { confirmRemove = false }) { Text("Cancelar") }
+                TextButton(onClick = { confirmRemoveGemini = false }) { Text("Cancelar") }
             },
             containerColor = OrbPanel,
         )
+    }
+
+    if (confirmRemoveGroq) {
+        AlertDialog(
+            onDismissRequest = { confirmRemoveGroq = false },
+            title = { Text("Remover a chave Groq?") },
+            text = {
+                Text("Os modelos Groq deixam de funcionar. O Gemini continua respondendo por texto, voz e live.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmRemoveGroq = false
+                        groqKey = ""
+                        onRemoveGroqKey()
+                    },
+                ) { Text("Remover", color = OrbRed) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmRemoveGroq = false }) { Text("Cancelar") }
+            },
+            containerColor = OrbPanel,
+        )
+    }
+}
+
+@Composable
+private fun KeyStatus(configured: Boolean, label: String) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = OrbPanel,
+        border = BorderStroke(1.dp, OrbLine),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Filled.Key,
+                contentDescription = null,
+                tint = if (configured) Color(0xFF35D07F) else OrbMuted,
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = if (configured) "$label configurada no aparelho" else "$label sem chave",
+                color = OrbText,
+                fontSize = 12.sp,
+            )
+        }
     }
 }
 
@@ -270,6 +385,35 @@ private fun SectionTitle(text: String) {
         fontWeight = FontWeight.SemiBold,
         modifier = Modifier.padding(top = 20.dp, bottom = 8.dp),
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ModelPicker(models: List<String>, selected: String, label: String, onSelect: (String) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
+        OutlinedTextField(
+            value = selected,
+            onValueChange = onSelect,
+            label = { Text(label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryEditable),
+            singleLine = true,
+            shape = RoundedCornerShape(12.dp),
+            colors = orbFieldColors(),
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            models.forEach { model ->
+                DropdownMenuItem(
+                    text = { Text(model) },
+                    onClick = {
+                        onSelect(model)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

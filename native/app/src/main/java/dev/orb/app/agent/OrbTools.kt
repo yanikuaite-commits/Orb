@@ -1,7 +1,6 @@
 package dev.orb.app.agent
 
 import dev.orb.app.data.GeminiClient
-import dev.orb.app.data.GeminiFunctionDeclaration
 import dev.orb.app.data.LocalMemoryStore
 import dev.orb.app.data.Reminder
 import dev.orb.app.data.ReminderTime
@@ -41,7 +40,7 @@ class OrbTools(
     private val scheduler: ReminderScheduler,
     private val json: Json,
 ) {
-    fun declarations(): List<GeminiFunctionDeclaration> = listOf(
+    fun specs(): List<ToolSpec> = listOf(
         decl(
             "web_search",
             "Pesquisa na web por fatos atuais, notícias, preços ou qualquer assunto. Use sempre que a resposta depender de informação recente.",
@@ -323,7 +322,7 @@ class OrbTools(
         }
 
     private fun decl(name: String, description: String, parameters: JsonObject) =
-        GeminiFunctionDeclaration(name = name, description = description, parameters = parameters)
+        ToolSpec(name = name, description = description, parameters = parameters)
 
     private companion object {
         val WMO = mapOf(

@@ -1,26 +1,12 @@
 package dev.orb.app.agent
 
-import dev.orb.app.data.GeminiClient
-import dev.orb.app.data.GeminiContent
 import dev.orb.app.data.GeminiException
-import dev.orb.app.data.GeminiFunctionCallingConfig
-import dev.orb.app.data.GeminiFunctionResponse
-import dev.orb.app.data.GeminiGenerationConfig
-import dev.orb.app.data.GeminiPart
-import dev.orb.app.data.GeminiRequest
-import dev.orb.app.data.GeminiTool
-import dev.orb.app.data.GeminiToolConfig
+import dev.orb.app.data.GroqException
 import dev.orb.app.data.HistoryStore
 import dev.orb.app.data.LocalMemoryStore
 import dev.orb.app.data.SettingsStore
-import dev.orb.app.data.Tier
 import dev.orb.app.data.ToolTrace
-import dev.orb.app.data.functionCalls
-import dev.orb.app.data.text
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -33,85 +19,64 @@ data class AgentResult(
 )
 
 class OrbAgent(
-    private val gemini: GeminiClient,
     private val memory: LocalMemoryStore,
     private val history: HistoryStore,
     private val tools: OrbTools,
     private val settings: SettingsStore,
 ) {
-    suspend fun chat(message: String): AgentResult {
-        if (!gemini.hasKey()) {
+    suspend fun chat(message: String, client: TextModelClient, model: String): AgentResult {
+        if (!client.hasKey()) {
             return AgentResult(
-                reply = "Ainda não tenho uma chave da API Gemini configurada. Abra os ajustes e cole sua chave para eu começar a funcionar.",
+                reply = "Ainda não tenho a chave ${client.label} configurada. Abra os ajustes e cole a chave para eu começar.",
                 ok = false,
                 error = "missing_api_key",
             )
         }
 
-        val contents = mutableListOf<GeminiContent>()
-        history.messages(HISTORY_TURNS * 2).forEach { entry ->
-            if (entry.text.isNotBlank()) {
-                contents += GeminiContent(
-                    role = if (entry.role == "assistant") "model" else "user",
-                    parts = listOf(GeminiPart(text = entry.text)),
-                )
-            }
-        }
-        contents += GeminiContent(role = "user", parts = listOf(GeminiPart(text = message)))
-
+        val conversation = client.conversation(
+            system = systemPrompt(),
+            history = history.messages(HISTORY_TURNS * 2).map { it.role to it.text },
+            tools = tools.specs(),
+            model = model,
+        )
         val trace = mutableListOf<ToolTrace>()
         var reply = ""
 
-        for (round in 0 until MAX_TOOL_ROUNDS) {
-            val request = GeminiRequest(
-                contents = contents.toList(),
-                systemInstruction = GeminiContent(parts = listOf(GeminiPart(text = systemPrompt()))),
-                tools = listOf(GeminiTool(functionDeclarations = tools.declarations())),
-                generationConfig = GeminiGenerationConfig(temperature = 0.7),
-                toolConfig = GeminiToolConfig(GeminiFunctionCallingConfig("AUTO")),
-            )
-            val response = try {
-                gemini.generate(Tier.Smart, request)
-            } catch (error: GeminiException) {
-                if (error.isKey) {
-                    return AgentResult(
-                        reply = "Sua chave da API foi recusada. Confira a chave em Ajustes — ela precisa ser uma chave válida do Google AI Studio.",
-                        tools = trace,
-                        ok = false,
-                        error = "invalid_api_key",
-                    )
+        try {
+            var turn = conversation.send(message)
+            for (round in 0 until MAX_TOOL_ROUNDS) {
+                when (val current = turn) {
+                    is LlmTurn.Reply -> {
+                        reply = current.text.ifBlank { "Não consegui produzir uma resposta desta vez." }
+                        break
+                    }
+                    is LlmTurn.Tools -> {
+                        val results = current.calls.map { call ->
+                            val result = tools.run(call.name, call.arguments)
+                            trace += ToolTrace(
+                                name = call.name,
+                                arguments = call.arguments,
+                                result = JsonPrimitive(result),
+                            )
+                            LlmToolResult(id = call.id, name = call.name, result = result)
+                        }
+                        turn = conversation.sendToolResults(results)
+                    }
                 }
-                return AgentResult(
-                    reply = "Não consegui falar com o modelo agora. Pode ser cota esgotada ou falta de conexão. Tente de novo em alguns instantes.",
-                    tools = trace,
-                    ok = false,
-                    error = "model_unavailable",
-                )
             }
-
-            val calls = response.functionCalls()
-            if (calls.isEmpty()) {
-                reply = response.text().ifBlank { "Não consegui produzir uma resposta desta vez." }
-                break
-            }
-
-            val modelContent = response.candidates.firstOrNull()?.content
-            if (modelContent != null) contents += modelContent
-
-            val responseParts = mutableListOf<GeminiPart>()
-            for (call in calls) {
-                val args = call.args ?: JsonObject(emptyMap())
-                val result = tools.run(call.name, args)
-                trace += ToolTrace(name = call.name, arguments = args, result = JsonPrimitive(result))
-                responseParts += GeminiPart(
-                    functionResponse = GeminiFunctionResponse(
-                        id = call.id,
-                        name = call.name,
-                        response = buildJsonObject { put("result", result) },
-                    ),
-                )
-            }
-            contents += GeminiContent(role = "user", parts = responseParts)
+        } catch (error: Exception) {
+            val keyError = (error is GeminiException && error.isKey) ||
+                (error is GroqException && error.isKey)
+            return AgentResult(
+                reply = if (keyError) {
+                    "Sua chave da ${client.label} foi recusada. Confira a chave em Ajustes."
+                } else {
+                    "Não consegui falar com o modelo agora. Pode ser cota, modelo indisponível ou falta de conexão. Tente de novo em alguns instantes."
+                },
+                tools = trace,
+                ok = false,
+                error = if (keyError) "invalid_api_key" else "model_unavailable",
+            )
         }
 
         if (reply.isBlank()) {

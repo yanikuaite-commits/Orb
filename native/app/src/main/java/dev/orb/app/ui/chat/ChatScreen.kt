@@ -411,10 +411,11 @@ private fun Composer(
 
 private fun statusColor(status: OrbStatus): Color = when (status) {
     OrbStatus.Ready -> Color(0xFF35D07F)
-    OrbStatus.MissingKey -> Color(0xFFFFB020)
+    OrbStatus.MissingKey, OrbStatus.MissingGroqKey -> Color(0xFFFFB020)
 }
 
 private fun statusLabel(state: OrbState): String = when (state.status) {
-    OrbStatus.Ready -> "pronto · ${state.language}"
+    OrbStatus.Ready -> "pronto · ${state.textModel}"
     OrbStatus.MissingKey -> "falta a chave Gemini"
+    OrbStatus.MissingGroqKey -> "falta a chave Groq"
 }

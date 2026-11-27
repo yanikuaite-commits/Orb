@@ -44,8 +44,9 @@ import dev.orb.app.ui.theme.OrbRed
 import dev.orb.app.ui.theme.OrbText
 
 @Composable
-fun SetupScreen(state: OrbState, onActivate: (String, String) -> Unit) {
+fun SetupScreen(state: OrbState, onActivate: (String, String, String) -> Unit) {
     var apiKey by remember { mutableStateOf("") }
+    var groqKey by remember { mutableStateOf("") }
     var userName by remember { mutableStateOf("") }
 
     Column(
@@ -65,7 +66,7 @@ fun SetupScreen(state: OrbState, onActivate: (String, String) -> Unit) {
         Text("Ativar o Orb", color = OrbText, fontSize = 24.sp)
         Spacer(Modifier.height(8.dp))
         Text(
-            text = "O Orb roda inteiro no seu celular. Para pensar e falar, ele usa a API Gemini do Google — sem PC, sem servidor e sem token. Cole sua chave do Google AI Studio; ela fica criptografada no aparelho.",
+            text = "O Orb roda inteiro no seu celular. A chave Gemini é obrigatória para voz e live; a chave Groq é opcional e só para texto. As duas ficam criptografadas no aparelho, sem PC e sem servidor.",
             color = OrbMuted,
             fontSize = 13.sp,
             textAlign = TextAlign.Center,
@@ -76,8 +77,24 @@ fun SetupScreen(state: OrbState, onActivate: (String, String) -> Unit) {
             value = apiKey,
             onValueChange = { apiKey = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Chave Gemini") },
+            label = { Text("Chave Gemini (obrigatória)") },
             placeholder = { Text("AIza…") },
+            singleLine = true,
+            shape = RoundedCornerShape(14.dp),
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Password,
+                imeAction = ImeAction.Next,
+            ),
+            colors = orbFieldColors(),
+        )
+        Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+            value = groqKey,
+            onValueChange = { groqKey = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Chave Groq (opcional, texto)") },
+            placeholder = { Text("gsk_…") },
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
             visualTransformation = PasswordVisualTransformation(),
@@ -105,7 +122,7 @@ fun SetupScreen(state: OrbState, onActivate: (String, String) -> Unit) {
         }
         Spacer(Modifier.height(20.dp))
         Button(
-            onClick = { onActivate(apiKey, userName) },
+            onClick = { onActivate(apiKey, groqKey, userName) },
             enabled = !state.busy,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(14.dp),
@@ -123,14 +140,14 @@ fun SetupScreen(state: OrbState, onActivate: (String, String) -> Unit) {
         }
         Spacer(Modifier.height(14.dp))
         Text(
-            text = "Obtenha uma chave gratuita em aistudio.google.com/apikey",
+            text = "Gemini em aistudio.google.com/apikey · Groq em console.groq.com/keys",
             color = OrbRed,
             fontSize = 12.sp,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(10.dp))
         Text(
-            text = "Internet é necessária para falar com o Gemini. Memória, histórico e lembretes ficam no aparelho.",
+            text = "Internet é necessária para os modelos. Memória, histórico e lembretes ficam no aparelho.",
             color = OrbMuted,
             fontSize = 11.sp,
             textAlign = TextAlign.Center,

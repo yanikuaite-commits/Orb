@@ -2,12 +2,15 @@ package dev.orb.app
 
 import android.app.Application
 import android.content.Context
+import dev.orb.app.agent.GeminiTextProvider
+import dev.orb.app.agent.GroqTextProvider
 import dev.orb.app.agent.OrbAgent
 import dev.orb.app.agent.OrbTools
 import dev.orb.app.audio.TtsPlayer
 import dev.orb.app.audio.WavPlayer
 import dev.orb.app.data.ApiKeyStore
 import dev.orb.app.data.GeminiClient
+import dev.orb.app.data.GroqClient
 import dev.orb.app.data.HistoryStore
 import dev.orb.app.data.LocalMemoryStore
 import dev.orb.app.data.SettingsStore
@@ -53,8 +56,11 @@ class AppContainer(context: Context) {
     }
 
     val gemini = GeminiClient(http, apiKeyStore)
+    val groq = GroqClient(http, apiKeyStore)
+    val geminiText = GeminiTextProvider(gemini)
+    val groqText = GroqTextProvider(groq, json)
     val tools = OrbTools(http, gemini, memory, reminderStore, scheduler, json)
-    val agent = OrbAgent(gemini, memory, history, tools, settings)
+    val agent = OrbAgent(memory, history, tools, settings)
 }
 
 class OrbApplication : Application() {
