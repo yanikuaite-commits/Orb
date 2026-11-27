@@ -101,7 +101,7 @@ private class GroqConversation(
     }
 }
 
-private fun normalizeSchema(element: JsonElement): JsonElement = when (element) {
+internal fun normalizeSchema(element: JsonElement): JsonElement = when (element) {
     is JsonObject -> JsonObject(
         element.mapValues { (key, value) ->
             if (key == "type" && value is JsonPrimitive && value.isString) {

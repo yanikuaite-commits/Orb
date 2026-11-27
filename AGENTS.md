@@ -1,7 +1,7 @@
 # Orb — notes for coding agents
 
 A mobile-first personal assistant derived from JARVIS (Mark LVII) by FatihMakes.
-The phone runs a standalone native Kotlin/Compose app that talks directly to Gemini; the Python FastAPI server is optional and only backs the PWA/Capacitor client.
+The phone runs a standalone native Kotlin/Compose app that talks directly to Gemini (voice/live and text) or Groq (text); the Python FastAPI server is optional and only backs the PWA/Capacitor client.
 
 ## Run and test
 
@@ -29,9 +29,11 @@ relative imports.
 - `server/orb/memory.py` — flat JSON entry list, plus capped history.
 - `native/app/src/main/java/dev/orb/app/agent/` — the Kotlin agent loop and
   tools. It mirrors `server/orb/agent.py` + `tools.py`; keep the two in sync.
-- `native/app/src/main/java/dev/orb/app/data/` — `GeminiClient` (REST model
-  ladder), `LocalMemoryStore`, `HistoryStore`, `ApiKeyStore` (encrypted key),
-  `SettingsStore`.
+- `native/app/src/main/java/dev/orb/app/data/` — `GeminiClient` and `GroqClient`
+  (REST text providers), `LocalMemoryStore`, `HistoryStore`, `ApiKeyStore`
+  (encrypted Gemini/Groq keys), `SettingsStore`.
+- `native/app/src/main/java/dev/orb/app/agent/` — `TextModelClient`,
+  `GeminiTextProvider`, `GroqTextProvider`, `OrbAgent` and tools.
 - `mobile/www/` — the PWA client. No build step, no framework.
 - `native/` — the Android client in Kotlin + Jetpack Compose (Ktor, DataStore,
   AlarmManager, SpeechRecognizer, TextToSpeech).
@@ -55,8 +57,10 @@ relative imports.
 - **Never return the API key** from `settings.public_settings()`; the UI only
   needs `api_key_set`.
 - **The Kotlin app must stay standalone.** Do not reintroduce a server URL,
-  token, or `/api/*` dependency into `native/`; it must work with only a Gemini
-  key and internet.
+  token, or `/api/*` dependency into `native/`. It needs a Gemini key (mandatory,
+  voice/live) and optionally a Groq key (text); both are encrypted on device.
+- **Two keys only.** Gemini is mandatory for voice/live and text; Groq is optional
+  and text-only. Do not add a third provider or a server URL to the Kotlin app.
 
 ## Style
 
@@ -69,9 +73,9 @@ relative imports.
 ## Native app
 
 Two Android clients exist. The **Kotlin app in `native/`** is the main one and
-is standalone: `dev.orb.app`, Compose UI, Ktor client, direct Gemini REST calls,
-EncryptedSharedPreferences for the key, DataStore settings, local alarms and
-native voice. It does not call the FastAPI backend. Build it with
+is standalone: `dev.orb.app`, Compose UI, Ktor client, direct Gemini/Groq REST
+calls, EncryptedSharedPreferences for both keys, DataStore settings, local alarms
+and native voice. It does not call the FastAPI backend. Build it with
 `cd native && ./gradlew :app:testDebugUnitTest :app:assembleDebug` (JDK 17 +
 Android SDK 35). CI builds `orb-native-debug-apk` in
 `.github/workflows/android-native.yml`.
@@ -92,9 +96,14 @@ The **Capacitor app in `mobile/android/`** is the hybrid fallback:
 - The native app schedules reminders with `AlarmManager`; `BootReceiver`
   reschedules them after a reboot. Reminders are local (`ReminderStore`), never
   fetched from the backend.
-- In the native app the Gemini key lives in `EncryptedSharedPreferences` and is
-  sent only to Google. In the PWA/backend it lives in `.env`/`config.json` and is
-  sent through `PUT /api/config`. Never hardcode a key in the APK.
+- In the native app the Gemini and Groq keys live in `EncryptedSharedPreferences`
+  and are sent only to their providers. Gemini is mandatory for voice/live; Groq
+  is optional and text-only. In the PWA/backend the Gemini key lives in
+  `.env`/`config.json` and is sent through `PUT /api/config`. Never hardcode a key
+  in the APK.
+- Groq uses the OpenAI-compatible `/openai/v1/chat/completions` endpoint. Its tool
+  schemas need lowercase JSON Schema types; `normalizeSchema` converts the
+  Gemini-style declarations.
 - The service worker is skipped inside the Capacitor shell (`window.Capacitor`).
 
 ## Licence

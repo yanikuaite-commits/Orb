@@ -53,11 +53,13 @@ criptografada no celular e é enviada só para o Google.
 - **Lembretes** com alarme no Android, mesmo com o app fechado (na PWA, enquanto aberta).
 - **Voz do aparelho** (grátis) ou **voz Gemini** (mais natural).
 - **App Android nativo** em Kotlin + Jetpack Compose, com PWA instalável como alternativa.
+- **Escolha de modelo de texto**: Gemini (também voz/live) ou Groq (só texto), com modelo editável em Ajustes.
 
 ## Começando (5 minutos)
 
-> **Só quer o app Android?** Ele é autônomo: instale o APK, cole sua chave Gemini
-> e pronto. O backend abaixo é necessário apenas para a PWA/Capacitor.
+> **Só quer o app Android?** Ele é autônomo: instale o APK, cole a chave Gemini
+> (obrigatória para voz/live) e, se quiser, a chave Groq (texto). O backend abaixo
+> é necessário apenas para a PWA/Capacitor.
 
 ### 1. Requisitos (backend opcional)
 
@@ -128,9 +130,10 @@ Isso é essencial se o servidor estiver exposto na internet.
 ## App Android nativo (Kotlin)
 
 O cliente principal é um app **Android nativo em Kotlin + Jetpack Compose**, em
-`native/`. Ele é **autônomo**: fala direto com a API Gemini, guarda memória,
-histórico e lembretes no aparelho e **não precisa de PC, servidor ou token**.
-Foi feito para o que a PWA não consegue entregar:
+`native/`. Ele é **autônomo**: fala direto com a API Gemini (texto, voz e live) e,
+se você configurar, com a API Groq (só texto); guarda memória, histórico e
+lembretes no aparelho e **não precisa de PC, servidor ou token**. Foi feito para o
+que a PWA não consegue entregar:
 
 - chat com o HUD do Orb, voz (`SpeechRecognizer`) e resposta falada (TTS do
   aparelho ou voz Gemini);
@@ -161,10 +164,13 @@ cd native
 # APK: native/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Na primeira execução, cole sua chave do Google AI Studio. Ela é validada, fica
-criptografada no aparelho (`EncryptedSharedPreferences`) e é enviada só para o
-Google. O app não usa HTTP cleartext: todas as chamadas são HTTPS. Sem internet,
-o chat e o Gemini não funcionam; memória, histórico e lembretes continuam locais.
+Na primeira execução, cole sua chave do Google AI Studio (obrigatória) e, se
+quiser, a chave Groq (opcional, só texto). As duas são validadas, ficam
+criptografadas no aparelho (`EncryptedSharedPreferences`) e são enviadas só para
+o provedor correspondente. Em **Ajustes → Modelo de texto**, escolha Gemini ou
+Groq e o modelo (dá para digitar um modelo novo). O app não usa HTTP cleartext:
+todas as chamadas são HTTPS. Sem internet, o chat não funciona; memória,
+histórico e lembretes continuam locais.
 
 ### iOS
 
@@ -251,8 +257,8 @@ mobile/
   package.json
 native/
   app/                 # app Android nativo (Kotlin + Compose)
-    src/main/java/dev/orb/app/agent/   # OrbAgent + ferramentas
-    src/main/java/dev/orb/app/data/    # GeminiClient, stores, chave
+    src/main/java/dev/orb/app/agent/   # OrbAgent, providers, ferramentas
+    src/main/java/dev/orb/app/data/    # GeminiClient, GroqClient, stores, chaves
   gradle/              # wrapper e catálogo de versões
 .github/workflows/     # testes Python e builds dos APKs
 docs/
@@ -268,12 +274,14 @@ cd native && ./gradlew :app:testDebugUnitTest
 No backend, os testes cobrem memória, ferramentas, o laço de ferramentas do
 agente, o caminho real do SDK (com um Gemini local simulado) e todas as rotas da
 API — inclusive o caminho sem chave. No app Kotlin, os testes cobrem o wrapper
-WAV do TTS, o parser de datas de lembrete e a memória local.
+WAV do TTS, o parser de datas de lembrete, a memória local e a conversão de schema
+para o Groq.
 
 ## Segurança e privacidade
 
-- No app Android, a chave Gemini fica criptografada no aparelho
-  (`EncryptedSharedPreferences`) e é enviada só para o Google.
+- No app Android, as chaves Gemini e Groq ficam criptografadas no aparelho
+  (`EncryptedSharedPreferences`) e são enviadas só para o provedor correspondente.
+  A Gemini é obrigatória porque também gera voz/live; a Groq é opcional e só texto.
 - Na PWA/backend, a chave fica no servidor (`.env` ou `config.json`), nunca no
   navegador. Use `ORB_TOKEN` sempre que o backend estiver acessível pela internet.
 - No app Android, memória e histórico são arquivos JSON em `filesDir/orb/`; nada
@@ -287,11 +295,10 @@ WAV do TTS, o parser de datas de lembrete e a memória local.
   falhar, o app cai automaticamente para a voz do aparelho.
 - Na PWA, lembretes só notificam com o app aberto (sem push em segundo plano).
   No app Kotlin, os alarmes tocam com o app fechado via `AlarmManager`.
-- O modelo de texto padrão é `gemini-3.5-flash`, com fallback para
-  `gemini-flash-latest` e `gemini-2.5-flash`. Se a sua chave não tiver acesso a
-  algum, ajuste as listas em
-  `native/app/src/main/java/dev/orb/app/data/GeminiClient.kt` (ou `model_ladder`
-  no backend).
+- O modelo de texto padrão é `gemini-3.5-flash`; no Groq, `llama-3.3-70b-versatile`.
+  Há fallback automático se um modelo estiver indisponível. A lista fica em
+  `native/app/src/main/java/dev/orb/app/data/Providers.kt` e o campo em Ajustes
+  aceita qualquer nome de modelo.
 
 ## Licença e créditos
 
