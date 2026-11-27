@@ -120,6 +120,7 @@ fun OrbRoot(container: AppContainer) {
             NavHost(
                 navController = nav,
                 startDestination = "chat",
+                modifier = Modifier.fillMaxSize(),
             ) {
                 composable("chat") {
                     ChatScreen(

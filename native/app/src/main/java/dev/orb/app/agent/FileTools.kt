@@ -357,6 +357,7 @@ class FileTools(
 
     private fun copyRecursively(source: File, target: File, overwrite: Boolean) {
         if (isSymlink(source)) throw IOException("link simbólico ignorado: ${source.name}")
+        if (isSymlink(target)) throw IOException("destino é um link simbólico: ${target.path}")
         if (source.isDirectory) {
             if (target.exists() && !target.isDirectory) {
                 throw IOException("destino é um arquivo: ${target.path}")
